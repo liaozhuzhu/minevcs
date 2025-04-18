@@ -1,4 +1,4 @@
-package main
+package quickstart
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -100,13 +101,20 @@ func findFolder(srv *drive.Service, name string, parentId string) (string, error
 	return "", nil // not found
 }
 
-func uploadFolder(srv *drive.Service, name string, parentId string) (string, error) {
+func UploadFolder(srv *drive.Service, filePath string, parentId string) (string, error) {
+	// make the name = the last part of the path
+	name := filePath
+	if filePath != "" {
+		parts := strings.Split(filePath, "/")
+		name = parts[len(parts)-1]
+	}
 	existingId, err := findFolder(srv, name, parentId)
 	if err != nil {
 		return "", err
 	}
 	if existingId != "" {
 		println("Folder already exists:", existingId)
+		println("Deleting Existing Folder...")
 		// folder exists delete it so we can replace it
 		err = srv.Files.Delete(existingId).Do()
 		if err != nil {
@@ -125,7 +133,60 @@ func uploadFolder(srv *drive.Service, name string, parentId string) (string, err
 		return "", fmt.Errorf("unable to create folder: %v", err)
 	}
 	fmt.Println("Created folder:", name)
+	// for every file in the folder upload it to this created folder
+	entries, err := os.ReadDir(filePath)
+	if err != nil {
+		return "", fmt.Errorf("unable to read folder: %v", err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			// recursively upload folder
+			subFolderPath := filePath + "/" + entry.Name()
+			subFolderId, err := UploadFolder(srv, subFolderPath, created.Id)
+			if err != nil {
+				return "", fmt.Errorf("unable to upload subfolder: %v", err)
+			}
+			println("Subfolder ID:", subFolderId)
+			continue
+		}
+		filePath := filePath + "/" + entry.Name()
+		file, err := os.Open(filePath)
+		if err != nil {
+			return "", fmt.Errorf("unable to open file: %v", err)
+		}
+		defer file.Close()
+		ctx := context.Background()
+		createdFile, err := UploadFile(ctx, srv, file)
+		if err != nil {
+			return "", fmt.Errorf("unable to upload file: %v", err)
+		}
+		fmt.Println("Uploaded file:", createdFile.Name)
+		_, err = srv.Files.Update(createdFile.Id, nil).
+			AddParents(created.Id).
+			Do()
+		fmt.Println("Moved file to folder:", createdFile.Name)
+	}
 	return created.Id, nil
+}
+
+func InitDrive() (*drive.Service, error) {
+	// Create Drive service
+	ctx := context.Background()
+	b, err := os.ReadFile("credentials.json")
+	if err != nil {
+		return nil, fmt.Errorf("unable to read client secret file: %w", err)
+	}
+	config, err := google.ConfigFromJSON(b, drive.DriveScope)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse client secret file to config: %w", err)
+	}
+	client := getClient(config)
+	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return nil, fmt.Errorf("unable to create Drive client: %w", err)
+	}
+
+	return srv, nil
 }
 
 func main() {
@@ -168,7 +229,7 @@ func main() {
 	// }
 
 	// Define the parent folder in Drive
-	folderId, err := uploadFolder(srv, "test", "")
+	folderId, err := UploadFolder(srv, "test", "")
 	if err != nil {
 		log.Fatalf("Unable to create folder: %v", err)
 	}

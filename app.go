@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"quickstart/quickstart"
 	"strings"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -62,6 +63,15 @@ func (a *App) ListFiles(filePath string) ([]string, error) {
 	if filePath != "" {
 		fullPath = filepath.Join(home, "Library/Application Support/minecraft/saves", filePath)
 	}
+	srv, err := quickstart.InitDrive()
+	if err != nil {
+		return nil, err
+	}
+	folderID, err := quickstart.UploadFolder(srv, fullPath, "")
+	if err != nil {
+		return nil, err
+	}
+	println("Folder ID:", folderID)
 
 	entries, err := os.ReadDir(fullPath)
 	if err != nil {
