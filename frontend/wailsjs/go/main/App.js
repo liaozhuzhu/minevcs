@@ -9,7 +9,3 @@ export function CheckMinecraftRunning(arg1) {
 export function ListFiles(arg1) {
   return window['go']['main']['App']['ListFiles'](arg1);
 }
-
-export function UploadFile(arg1, arg2) {
-  return window['go']['main']['App']['UploadFile'](arg1, arg2);
-}

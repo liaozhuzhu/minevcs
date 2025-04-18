@@ -4,5 +4,3 @@
 export function CheckMinecraftRunning(arg1:string):Promise<boolean>;
 
 export function ListFiles(arg1:string):Promise<Array<string>>;
-
-export function UploadFile(arg1:string,arg2:string):Promise<string>;
