@@ -69,7 +69,19 @@ func saveToken(path string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func quickStart() {
+func UploadFile(ctx context.Context, srv *drive.Service, file *os.File) (*drive.File, error) {
+	f := &drive.File{
+		Name:     file.Name(),
+		MimeType: "application/octet-stream",
+	}
+	res, err := srv.Files.Create(f).Media(file).Do()
+	if err != nil {
+		return nil, fmt.Errorf("unable to create file: %v", err)
+	}
+	return res, nil
+}
+
+func main() {
 	ctx := context.Background()
 	b, err := os.ReadFile("credentials.json")
 	if err != nil {
@@ -77,7 +89,7 @@ func quickStart() {
 	}
 
 	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
+	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
@@ -87,6 +99,13 @@ func quickStart() {
 	if err != nil {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
+
+	shortFile, err := os.Open("test.txt")
+	outFile, err := UploadFile(ctx, srv, shortFile)
+	if err != nil {
+		log.Fatalf("Unable to upload file: %v", err)
+	}
+	fmt.Printf("File '%s' uploaded with ID: %s\n", outFile.Name, outFile.Id)
 
 	r, err := srv.Files.List().PageSize(10).
 		Fields("nextPageToken, files(id, name)").Do()
