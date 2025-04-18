@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -127,57 +126,6 @@ func uploadFolder(srv *drive.Service, name string, parentId string) (string, err
 	}
 	fmt.Println("Created folder:", name)
 	return created.Id, nil
-}
-
-func uploadDirectoryToDrive(srv *drive.Service, localPath string, parentDriveID string) error {
-	return filepath.Walk(localPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Skip the base directory (already created as parentDriveID)
-		if path == localPath {
-			return nil
-		}
-
-		relPath, _ := filepath.Rel(localPath, path)
-
-		if info.IsDir() {
-			// Create Drive folder
-			folder := &drive.File{
-				Name:     info.Name(),
-				MimeType: "application/vnd.google-apps.folder",
-				Parents:  []string{parentDriveID},
-			}
-			created, err := srv.Files.Create(folder).Fields("id").Do()
-			if err != nil {
-				return fmt.Errorf("could not create folder %s: %w", relPath, err)
-			}
-			// Recurse into subdirectory
-			return uploadDirectoryToDrive(srv, path, created.Id)
-		} else {
-			// Upload file
-			f, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-
-			driveFile := &drive.File{
-				Name:    info.Name(),
-				Parents: []string{parentDriveID},
-			}
-			_, err = srv.Files.Create(driveFile).
-				Media(f).
-				Fields("id").
-				Do()
-			if err != nil {
-				return fmt.Errorf("upload failed for %s: %w", relPath, err)
-			}
-			fmt.Println("Uploaded:", relPath)
-		}
-		return nil
-	})
 }
 
 func main() {
