@@ -6,6 +6,6 @@ export function CheckMinecraftRunning(arg1) {
   return window['go']['main']['App']['CheckMinecraftRunning'](arg1);
 }
 
-export function ListFiles(arg1) {
-  return window['go']['main']['App']['ListFiles'](arg1);
+export function CloudUpload(arg1) {
+  return window['go']['main']['App']['CloudUpload'](arg1);
 }

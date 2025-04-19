@@ -15,6 +15,7 @@ import (
 	"google.golang.org/api/option"
 )
 
+// GO QUICKSTART SAMPLE FROM https://developers.google.com/drive/api/v3/quickstart/go
 // Retrieve a token, saves the token, then returns the generated client.
 func getClient(config *oauth2.Config) *http.Client {
 	// The file token.json stores the user's access and refresh tokens, and is
@@ -70,10 +71,13 @@ func saveToken(path string, token *oauth2.Token) {
 	json.NewEncoder(f).Encode(token)
 }
 
-func UploadFile(ctx context.Context, srv *drive.Service, file *os.File) (*drive.File, error) {
+// BEGIN GOOGLE DRIVE API
+func UploadFile(ctx context.Context, srv *drive.Service, file *os.File, parentId string) (*drive.File, error) {
+	fileName := strings.Split(file.Name(), "/")[len(strings.Split(file.Name(), "/"))-1]
 	f := &drive.File{
-		Name:     file.Name(),
+		Name:     fileName,
 		MimeType: "application/octet-stream",
+		Parents:  []string{parentId},
 	}
 	res, err := srv.Files.Create(f).Media(file).Do()
 	if err != nil {
@@ -139,8 +143,9 @@ func UploadFolder(srv *drive.Service, filePath string, parentId string) (string,
 		return "", fmt.Errorf("unable to read folder: %v", err)
 	}
 	for _, entry := range entries {
+		println("Entry:", entry.Name())
 		if entry.IsDir() {
-			// recursively upload folder
+			println("Recurring inside folder:", entry.Name())
 			subFolderPath := filePath + "/" + entry.Name()
 			subFolderId, err := UploadFolder(srv, subFolderPath, created.Id)
 			if err != nil {
@@ -148,23 +153,20 @@ func UploadFolder(srv *drive.Service, filePath string, parentId string) (string,
 			}
 			println("Subfolder ID:", subFolderId)
 			continue
+		} else {
+			filePath := filePath + "/" + entry.Name()
+			file, err := os.Open(filePath)
+			if err != nil {
+				return "", fmt.Errorf("unable to open file: %v", err)
+			}
+			defer file.Close()
+			ctx := context.Background()
+			createdFile, err := UploadFile(ctx, srv, file, created.Id)
+			if err != nil {
+				return "", fmt.Errorf("unable to upload file: %v", err)
+			}
+			fmt.Println("Uploaded file:", createdFile.Name)
 		}
-		filePath := filePath + "/" + entry.Name()
-		file, err := os.Open(filePath)
-		if err != nil {
-			return "", fmt.Errorf("unable to open file: %v", err)
-		}
-		defer file.Close()
-		ctx := context.Background()
-		createdFile, err := UploadFile(ctx, srv, file)
-		if err != nil {
-			return "", fmt.Errorf("unable to upload file: %v", err)
-		}
-		fmt.Println("Uploaded file:", createdFile.Name)
-		_, err = srv.Files.Update(createdFile.Id, nil).
-			AddParents(created.Id).
-			Do()
-		fmt.Println("Moved file to folder:", createdFile.Name)
 	}
 	return created.Id, nil
 }

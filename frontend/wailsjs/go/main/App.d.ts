@@ -3,4 +3,4 @@
 
 export function CheckMinecraftRunning(arg1:string):Promise<boolean>;
 
-export function ListFiles(arg1:string):Promise<Array<string>>;
+export function CloudUpload(arg1:string):Promise<Array<string>>;

@@ -51,8 +51,8 @@ func (a *App) CheckMinecraftRunning(expectedPath string) (bool, error) {
 	return false, nil
 }
 
-func (a *App) ListFiles(filePath string) ([]string, error) {
-	_, _ = a.CheckMinecraftRunning("/Applications/Minecraft.app/Contents/MacOS/launcher")
+func (a *App) CloudUpload(filePath string) ([]string, error) {
+	// _, _ = a.CheckMinecraftRunning("/Applications/Minecraft.app/Contents/MacOS/launcher")
 
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -71,7 +71,7 @@ func (a *App) ListFiles(filePath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	println("Folder ID:", folderID)
+	println("FINISHED UPLOADING World: ", folderID)
 
 	entries, err := os.ReadDir(fullPath)
 	if err != nil {
