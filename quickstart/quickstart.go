@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+
 	"net/http"
 	"os"
 	"strings"
@@ -15,38 +16,67 @@ import (
 	"google.golang.org/api/option"
 )
 
-// GO QUICKSTART SAMPLE FROM https://developers.google.com/drive/api/v3/quickstart/go
-// Retrieve a token, saves the token, then returns the generated client.
+// built off of quickstart example from google drive api w/ go (adjusted for UX)
 func getClient(config *oauth2.Config) *http.Client {
-	// The file token.json stores the user's access and refresh tokens, and is
-	// created automatically when the authorization flow completes for the first
-	// time.
+	// local token file should already exist by now
 	tokFile := "token.json"
 	tok, err := tokenFromFile(tokFile)
 	if err != nil {
-		tok = getTokenFromWeb(config)
-		saveToken(tokFile, tok)
+		println(err)
 	}
 	return config.Client(context.Background(), tok)
 }
 
-// Request a token from the web, then returns the retrieved token.
-func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
-	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	fmt.Printf("Go to the following link in your browser then type the "+
-		"authorization code: \n%v\n", authURL)
-
-	var authCode string
-	if _, err := fmt.Scan(&authCode); err != nil {
-		log.Fatalf("Unable to read authorization code %v", err)
+func getURL(config *oauth2.Config) string {
+	// The file token.json stores the user's access and refresh tokens, and is
+	// created automatically when the authorization flow completes for the first
+	// time.
+	tokFile := "token.json"
+	_, err := tokenFromFile(tokFile)
+	if err != nil {
+		// tok = getTokenFromWeb(config)
+		authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+		return authURL
 	}
+	// return config.Client(context.Background(), tok)
+	return ""
+}
 
-	tok, err := config.Exchange(context.TODO(), authCode)
+func HandleAuthCode(code string) *http.Client {
+	b, err := os.ReadFile("credentials.json")
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+	}
+	config, err := google.ConfigFromJSON(b, drive.DriveScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+	tok, err := config.Exchange(context.TODO(), code)
 	if err != nil {
 		log.Fatalf("Unable to retrieve token from web %v", err)
 	}
-	return tok
+	tokFile := "token.json"
+	saveToken(tokFile, tok)
+	return config.Client(context.Background(), tok)
 }
+
+// // Request a token from the web, then returns the retrieved token.
+// func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
+// 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+// 	fmt.Printf("Go to the following link in your browser then type the "+
+// 		"authorization code: \n%v\n", authURL)
+
+// 	var authCode string
+// 	if _, err := fmt.Scan(&authCode); err != nil {
+// 		log.Fatalf("Unable to read authorization code %v", err)
+// 	}
+
+// 	tok, err := config.Exchange(context.TODO(), authCode)
+// 	if err != nil {
+// 		log.Fatalf("Unable to retrieve token from web %v", err)
+// 	}
+// 	return tok
+// }
 
 // Retrieves a token from a local file.
 func tokenFromFile(file string) (*oauth2.Token, error) {
@@ -191,8 +221,8 @@ func InitDrive() (*drive.Service, error) {
 	return srv, nil
 }
 
-func main() {
-	ctx := context.Background()
+func Authenticate() (string, error) {
+	// ctx := context.Background()
 	b, err := os.ReadFile("credentials.json")
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
@@ -202,38 +232,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
-	client := getClient(config)
+	client := getURL(config)
 
-	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		log.Fatalf("Unable to retrieve Drive client: %v", err)
-	}
-
-	// shortFile, err := os.Open("test.txt")
-	// outFile, err := UploadFile(ctx, srv, shortFile)
+	// _, err = drive.NewService(ctx, option.WithHTTPClient(client))
 	// if err != nil {
-	// 	log.Fatalf("Unable to upload file: %v", err)
+	// 	log.Fatalf("Unable to retrieve Drive client: %v", err)
 	// }
-	// fmt.Printf("File '%s' uploaded with ID: %s\n", outFile.Name, outFile.Id)
-
-	// r, err := srv.Files.List().PageSize(10).
-	// 	Fields("nextPageToken, files(id, name)").Do()
-	// if err != nil {
-	// 	log.Fatalf("Unable to retrieve files: %v", err)
-	// }
-	// fmt.Println("Files:")
-	// if len(r.Files) == 0 {
-	// 	fmt.Println("No files found.")
-	// } else {
-	// 	for _, i := range r.Files {
-	// 		fmt.Printf("%s (%s)\n", i.Name, i.Id)
-	// 	}
-	// }
-
-	// Define the parent folder in Drive
-	folderId, err := UploadFolder(srv, "test", "")
-	if err != nil {
-		log.Fatalf("Unable to create folder: %v", err)
-	}
-	println("Upload folder with ID:", folderId)
+	// println("New token created successfully")
+	return client, nil
 }

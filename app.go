@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io"
+
 	"os"
 	"path/filepath"
 	"quickstart/quickstart"
@@ -83,4 +84,16 @@ func (a *App) CloudUpload(filePath string) ([]string, error) {
 		files = append(files, entry.Name())
 	}
 	return files, nil
+}
+
+func (a *App) GoogleAuth() (string, error) {
+	url, err := quickstart.Authenticate()
+	if err != nil {
+		return "", err
+	}
+	return url, nil
+}
+
+func (a *App) UserAuthCode(code string) {
+	quickstart.HandleAuthCode(code)
 }

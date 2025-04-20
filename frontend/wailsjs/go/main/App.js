@@ -9,3 +9,11 @@ export function CheckMinecraftRunning(arg1) {
 export function CloudUpload(arg1) {
   return window['go']['main']['App']['CloudUpload'](arg1);
 }
+
+export function GoogleAuth() {
+  return window['go']['main']['App']['GoogleAuth']();
+}
+
+export function UserAuthCode(arg1) {
+  return window['go']['main']['App']['UserAuthCode'](arg1);
+}

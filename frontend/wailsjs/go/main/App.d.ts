@@ -4,3 +4,7 @@
 export function CheckMinecraftRunning(arg1:string):Promise<boolean>;
 
 export function CloudUpload(arg1:string):Promise<Array<string>>;
+
+export function GoogleAuth():Promise<string>;
+
+export function UserAuthCode(arg1:string):Promise<void>;
