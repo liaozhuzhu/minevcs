@@ -45,7 +45,7 @@ function App() {
             <div className="flex justify-center items-start flex-col gap-2">
                 <div className="flex gap-2 items-center justify-center">
                   <label htmlFor="file-path">Minecraft Save Path:</label>
-                  <CircleHelp/>
+                  <CircleHelp size={15}/>
                 </div>
                 <input type="text" placeholder="UserHomeDir/Library/Application Support/minecraft/saves/" id="file-path" value={filePath} onChange={(e) => setFilePath(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
               </div>

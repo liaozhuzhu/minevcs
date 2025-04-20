@@ -72,7 +72,7 @@ func (a *App) CloudUpload(filePath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	println("FINISHED UPLOADING World: ", folderID)
+	println("FINISHED UPLOADING WORLD: ", folderID)
 
 	entries, err := os.ReadDir(fullPath)
 	if err != nil {
