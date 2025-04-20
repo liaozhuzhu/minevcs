@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
+	"drive/drive"
 	"io"
 
 	"os"
 	"path/filepath"
-	"quickstart/quickstart"
 	"strings"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -64,11 +64,11 @@ func (a *App) CloudUpload(filePath string) ([]string, error) {
 	if filePath != "" {
 		fullPath = filepath.Join(home, "Library/Application Support/minecraft/saves", filePath)
 	}
-	srv, err := quickstart.InitDrive()
+	srv, err := drive.InitDrive()
 	if err != nil {
 		return nil, err
 	}
-	folderID, err := quickstart.UploadFolder(srv, fullPath, "")
+	folderID, err := drive.UploadFolder(srv, fullPath, "")
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (a *App) CloudUpload(filePath string) ([]string, error) {
 }
 
 func (a *App) GoogleAuth() (string, error) {
-	url, err := quickstart.Authenticate()
+	url, err := drive.Authenticate()
 	if err != nil {
 		return "", err
 	}
@@ -95,5 +95,5 @@ func (a *App) GoogleAuth() (string, error) {
 }
 
 func (a *App) UserAuthCode(code string) {
-	quickstart.HandleAuthCode(code)
+	drive.HandleAuthCode(code)
 }

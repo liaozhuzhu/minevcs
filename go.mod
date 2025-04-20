@@ -1,4 +1,4 @@
-module quickstart
+module drive
 
 go 1.23.0
 
