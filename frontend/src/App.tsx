@@ -1,21 +1,37 @@
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import './App.css';
-import {CloudUpload, GoogleAuth, UserAuthCode} from "../wailsjs/go/main/App";
+import {CloudUpload, GoogleAuth, UserAuthCode, CheckIfAuthenticated, GetWorlds} from "../wailsjs/go/main/App";
 import {CircleHelp} from "lucide-react"
 import {BrowserOpenURL} from "../wailsjs/runtime";
 
 function App() {
     const [filePath, setFilePath] = useState<string>('');
+    const [worlds, setWorlds] = useState<string[]>([]);
     const [worldName, setWorldName] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const [showCode, setShowCode] = useState<boolean>(false);
     const [userCode, setUserCode] = useState<string>('');
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+    useEffect(() => {
+      CheckIfAuthenticated().then((isAuth: boolean) => {
+        setIsAuthenticated(isAuth);
+      });
+      if (localStorage.getItem('savePath')) {
+        setFilePath(localStorage.getItem('savePath') || '');
+        GetWorlds(localStorage.getItem('savePath') || '').then((worlds: string[]) => setWorlds(worlds))
+      }
+      if (localStorage.getItem('world')) {
+        setWorldName(localStorage.getItem('world') || '');
+      }
+    }, []);
+
     const updateFiles = () => setLoading(false);
 
     const Upload = (e: any, worldName: string) => {
       e.preventDefault();
       setLoading(true);
-      CloudUpload(worldName).then(updateFiles);
+      CloudUpload(worldName, "Library/Application Support/minecraft/saves").then(updateFiles);
     }
 
     const handleAuth = () => {
@@ -29,12 +45,20 @@ function App() {
       if (userCode !== null && userCode.length > 0) {
         UserAuthCode(userCode)
         setShowCode(false);
+        setIsAuthenticated(true);
       } else {
         console.error("User code is empty");
       }
     }
 
-    const buttonClass = "className= border text-zinc-500 rounded-md px-4 py-2 cursor-pointer transition duration-300 hover:text-zinc-50"
+    const setSavePath = () => {
+      if (!filePath) return;
+      GetWorlds(filePath).then((worlds: string[]) => setWorlds(worlds))
+      localStorage.setItem('savePath', filePath);
+      setFilePath('');
+    }
+
+    const buttonClass = `className= border text-zinc-500 rounded-md px-4 py-2 ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer transition duration-300 hover:text-zinc-50'}`
 
     // UserAuthCode
     return (
@@ -47,15 +71,22 @@ function App() {
                   <label htmlFor="file-path">Minecraft Save Path:</label>
                   <CircleHelp size={15}/>
                 </div>
-                <input type="text" placeholder="UserHomeDir/Library/Application Support/minecraft/saves/" id="file-path" value={filePath} onChange={(e) => setFilePath(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
+                <div className="flex justify-center items-center gap-2">
+                  <input type="text" placeholder="UserHomeDir/Library/Application Support/minecraft/saves/" id="file-path" value={filePath} onChange={(e) => setFilePath(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
+                  <button type="button" className={buttonClass} onClick={setSavePath}>Set</button>
+                </div>
               </div>
               <div className="flex justify-center items-start flex-col gap-2">
-                <label htmlFor="world-name">Minecraft World Name:</label>
-                <input type="text" placeholder="WORLDNAME" id="world-name" autoFocus value={worldName} onChange={(e) => setWorldName(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
+                <label htmlFor="world-name">Minecraft World</label>
+                <select id="world-name" value={worldName} onChange={(e) => {setWorldName(e.target.value); localStorage.setItem('world', e.target.value)}}   className="appearance-none w-full border border-zinc-600 rounded-md text-white placeholder-white/50 px-3 py-2 text-sm leading-tight focus:outline-none"                >
+                  {worlds.map((world: string, index: number) => (
+                    <option key={index} value={world}>{world}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex justify-center items-start gap-2">
-                <button type="button" className={buttonClass} onClick={handleAuth}>Auth</button>
-                <button type="submit" className={buttonClass}>Upload</button>
+                {!isAuthenticated && <button type="button" className={buttonClass} onClick={handleAuth}>Auth</button>}
+                <button type="submit" className={buttonClass} disabled={loading}>Upload</button>
               </div>
             </form>
             {showCode && (

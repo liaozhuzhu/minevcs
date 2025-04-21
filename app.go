@@ -52,7 +52,27 @@ func (a *App) CheckMinecraftRunning(expectedPath string) (bool, error) {
 	return false, nil
 }
 
-func (a *App) CloudUpload(filePath string) ([]string, error) {
+func (a *App) GetWorlds(minecraftDirectory string) ([]string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	fullPath := filepath.Join(home, minecraftDirectory)
+	entries, err := os.ReadDir(fullPath)
+	if err != nil {
+		return nil, err
+	}
+	var worlds []string
+	for _, entry := range entries {
+		if entry.Name() == ".DS_Store" {
+			continue
+		}
+		worlds = append(worlds, entry.Name())
+	}
+	return worlds, nil
+}
+
+func (a *App) CloudUpload(worldName string, minecraftDirectory string) ([]string, error) {
 	// _, _ = a.CheckMinecraftRunning("/Applications/Minecraft.app/Contents/MacOS/launcher")
 
 	home, err := os.UserHomeDir()
@@ -61,8 +81,8 @@ func (a *App) CloudUpload(filePath string) ([]string, error) {
 	}
 
 	fullPath := home
-	if filePath != "" {
-		fullPath = filepath.Join(home, "Library/Application Support/minecraft/saves", filePath)
+	if worldName != "" {
+		fullPath = filepath.Join(home, minecraftDirectory, worldName)
 	}
 	srv, err := drive.InitDrive()
 	if err != nil {
@@ -96,4 +116,15 @@ func (a *App) GoogleAuth() (string, error) {
 
 func (a *App) UserAuthCode(code string) {
 	drive.HandleAuthCode(code)
+}
+
+func (a *App) CheckIfAuthenticated() (bool, error) {
+	_, err := os.Stat("token.json")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
