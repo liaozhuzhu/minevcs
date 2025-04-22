@@ -10,10 +10,6 @@ export function CheckMinecraftRunning() {
   return window['go']['main']['App']['CheckMinecraftRunning']();
 }
 
-export function CloudUpload(arg1, arg2) {
-  return window['go']['main']['App']['CloudUpload'](arg1, arg2);
-}
-
 export function GetUserData() {
   return window['go']['main']['App']['GetUserData']();
 }
@@ -26,8 +22,8 @@ export function GoogleAuth() {
   return window['go']['main']['App']['GoogleAuth']();
 }
 
-export function SaveUserData(arg1, arg2) {
-  return window['go']['main']['App']['SaveUserData'](arg1, arg2);
+export function SaveUserData(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SaveUserData'](arg1, arg2, arg3);
 }
 
 export function UserAuthCode(arg1) {

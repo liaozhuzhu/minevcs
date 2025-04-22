@@ -6,14 +6,12 @@ export function CheckIfAuthenticated():Promise<boolean>;
 
 export function CheckMinecraftRunning():Promise<boolean>;
 
-export function CloudUpload(arg1:string,arg2:string):Promise<Array<string>>;
-
 export function GetUserData():Promise<main.UserData>;
 
 export function GetWorlds(arg1:string):Promise<Array<string>>;
 
 export function GoogleAuth():Promise<string>;
 
-export function SaveUserData(arg1:string,arg2:string):Promise<void>;
+export function SaveUserData(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function UserAuthCode(arg1:string):Promise<void>;
