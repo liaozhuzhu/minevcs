@@ -1,13 +1,12 @@
 import {useState, useEffect} from 'react';
 import './App.css';
-import {GoogleAuth, UserAuthCode, CheckIfAuthenticated, GetWorlds, SaveUserData, GetUserData} from "../wailsjs/go/main/App";
+import {GoogleAuth, UserAuthCode, CheckIfAuthenticated, SaveUserData, GetUserData} from "../wailsjs/go/main/App";
 import {CircleHelp} from "lucide-react"
 import {BrowserOpenURL} from "../wailsjs/runtime";
 
 function App() {
     const [minecraftSavePath, setMinecraftSavePath] = useState<string>('');
     const [minecraftLauncherPath, setMinecraftLauncherPath] = useState<string>('');
-    const [worlds, setWorlds] = useState<string[]>([]);
     const [worldName, setWorldName] = useState<string>('');
     const [showCode, setShowCode] = useState<boolean>(false);
     const [userCode, setUserCode] = useState<string>('');
@@ -24,10 +23,6 @@ function App() {
           setMinecraftLauncherPath(data.minecraftLauncher);
           setMinecraftSavePath(data.minecraftDirectory);
           setWorldName(data.worldName);
-          GetWorlds(data.minecraftDirectory).then((worlds: string[]) => {
-            setWorlds(worlds);
-          }
-          );
         } else {
           console.log("User hasn't set their data yet")
         }
@@ -53,11 +48,6 @@ function App() {
 
     const setSavePath = (path: string) => {
       setMinecraftSavePath(path);
-      if (path.split("/")[path.split("/").length-1] === "saves") {
-        GetWorlds(path).then((worlds: string[]) => setWorlds(worlds))
-      } else {
-        setWorlds([]);
-      }
     }
 
     const saveUserSettings = () => {
@@ -118,14 +108,9 @@ function App() {
                   <input type="text" placeholder="/Library/Application Support/minecraft/saves/" id="file-path" value={minecraftSavePath} onChange={(e) => setSavePath(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
                 </div>
               </div>
-              <div className={`flex justify-center items-start flex-col gap-2 w-full ${!worlds.length ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                <label htmlFor="world-name">Minecraft World</label>
-                <select id="world-name" value={worldName} onChange={(e) => {setWorldName(e.target.value)}}   className="h-12 appearance-none w-full border border-zinc-600 rounded-md text-white placeholder-white/50 px-3 py-2 text-sm leading-tight focus:outline-none"                >
-                  <option value="" disabled>Select a world</option>
-                  {worlds.map((world: string, index: number) => (
-                    <option key={index} value={world}>{world}</option>
-                  ))}
-                </select>
+              <div className={`flex justify-center items-start flex-col gap-2 w-full`}>
+                <label htmlFor="world-name">Minecraft World To Sync:</label>
+                <input type="text" placeholder="World Name" id="world-name" value={worldName} onChange={(e) => setWorldName(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
               </div>
               <div className="flex justify-center items-start gap-2">
                 {!isAuthenticated && <button type="button" className={getButtonClass(false)} onClick={handleAuth}>Auth</button>}

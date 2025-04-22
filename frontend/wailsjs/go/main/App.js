@@ -14,10 +14,6 @@ export function GetUserData() {
   return window['go']['main']['App']['GetUserData']();
 }
 
-export function GetWorlds(arg1) {
-  return window['go']['main']['App']['GetWorlds'](arg1);
-}
-
 export function GoogleAuth() {
   return window['go']['main']['App']['GoogleAuth']();
 }

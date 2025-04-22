@@ -161,26 +161,6 @@ func (a *App) CheckMinecraftRunning() (bool, error) {
 	return false, nil
 }
 
-func (a *App) GetWorlds(minecraftDirectory string) ([]string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	fullPath := filepath.Join(home, minecraftDirectory)
-	entries, err := os.ReadDir(fullPath)
-	if err != nil {
-		return nil, err
-	}
-	var worlds []string
-	for _, entry := range entries {
-		if entry.Name() == ".DS_Store" {
-			continue
-		}
-		worlds = append(worlds, entry.Name())
-	}
-	return worlds, nil
-}
-
 func (a *App) unzipFolder(zipFilePath string) (string, error) {
 	zipReader, err := zip.OpenReader(zipFilePath)
 	if err != nil {
