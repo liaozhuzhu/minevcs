@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import './App.css';
-import {CloudUpload, GoogleAuth, UserAuthCode, CheckIfAuthenticated, GetWorlds} from "../wailsjs/go/main/App";
+import {GoogleAuth, UserAuthCode, CheckIfAuthenticated, GetWorlds, SaveUserData, GetUserData} from "../wailsjs/go/main/App";
 import {CircleHelp} from "lucide-react"
 import {BrowserOpenURL} from "../wailsjs/runtime";
 
@@ -8,7 +8,8 @@ function App() {
     const [filePath, setFilePath] = useState<string>('');
     const [worlds, setWorlds] = useState<string[]>([]);
     const [worldName, setWorldName] = useState<string>('');
-    const [loading, setLoading] = useState<boolean>(false);
+    // const [loading, setLoading] = useState<boolean>(false);
+    const loading = false;
     const [showCode, setShowCode] = useState<boolean>(false);
     const [userCode, setUserCode] = useState<string>('');
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -17,22 +18,27 @@ function App() {
       CheckIfAuthenticated().then((isAuth: boolean) => {
         setIsAuthenticated(isAuth);
       });
-      if (localStorage.getItem('savePath')) {
-        setFilePath(localStorage.getItem('savePath') || '');
-        GetWorlds(localStorage.getItem('savePath') || '').then((worlds: string[]) => setWorlds(worlds))
-      }
-      if (localStorage.getItem('world')) {
-        setWorldName(localStorage.getItem('world') || '');
-      }
+
+      // later write a go fn that finds these saved on user 
+      GetUserData().then((data) => {
+        if (data) {
+          setFilePath(data.minecraftDirectory);
+          setWorldName(data.worldName);
+          GetWorlds(data.minecraftDirectory).then((worlds: string[]) => {
+            setWorlds(worlds);
+          }
+          );
+        }
+      });      
     }, []);
 
-    const updateFiles = () => setLoading(false);
+    // const updateFiles = () => setLoading(false);
 
-    const Upload = (e: any, worldName: string) => {
-      e.preventDefault();
-      setLoading(true);
-      CloudUpload(worldName, "Library/Application Support/minecraft/saves").then(updateFiles);
-    }
+    // const Upload = (e: any) => {
+    //   e.preventDefault();
+    //   setLoading(true);
+    //   CloudUpload(worldName, filePath).then(updateFiles);
+    // }
 
     const handleAuth = () => {
       GoogleAuth().then((url: string) => {
@@ -65,7 +71,7 @@ function App() {
         <div id="App">
           <div className="flex flex-col gap-5 justify-center items-center">
             <h1 className="font-bold text-4xl">MINEVCS</h1>
-            <form className="flex gap-8 items-center justify-center flex-col" onSubmit={(e) => Upload(e, worldName)}>
+            <form className="flex gap-8 items-center justify-center flex-col">
             <div className="flex justify-center items-start flex-col gap-2">
                 <div className="flex gap-2 items-center justify-center">
                   <label htmlFor="file-path">Minecraft Save Path:</label>
@@ -78,7 +84,8 @@ function App() {
               </div>
               <div className="flex justify-center items-start flex-col gap-2">
                 <label htmlFor="world-name">Minecraft World</label>
-                <select id="world-name" value={worldName} onChange={(e) => {setWorldName(e.target.value); localStorage.setItem('world', e.target.value)}}   className="appearance-none w-full border border-zinc-600 rounded-md text-white placeholder-white/50 px-3 py-2 text-sm leading-tight focus:outline-none"                >
+                <select id="world-name" value={worldName} onChange={(e) => {setWorldName(e.target.value)}}   className="appearance-none w-full border border-zinc-600 rounded-md text-white placeholder-white/50 px-3 py-2 text-sm leading-tight focus:outline-none"                >
+                  <option value="" disabled>Select a world</option>
                   {worlds.map((world: string, index: number) => (
                     <option key={index} value={world}>{world}</option>
                   ))}
@@ -86,7 +93,7 @@ function App() {
               </div>
               <div className="flex justify-center items-start gap-2">
                 {!isAuthenticated && <button type="button" className={buttonClass} onClick={handleAuth}>Auth</button>}
-                <button type="submit" className={buttonClass} disabled={loading}>Upload</button>
+                <button type="button" className={buttonClass} disabled={loading} onClick={() => SaveUserData(filePath, worldName)}>Save Settings</button>
               </div>
             </form>
             {showCode && (

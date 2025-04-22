@@ -6,12 +6,16 @@ export function CheckIfAuthenticated() {
   return window['go']['main']['App']['CheckIfAuthenticated']();
 }
 
-export function CheckMinecraftRunning(arg1) {
-  return window['go']['main']['App']['CheckMinecraftRunning'](arg1);
+export function CheckMinecraftRunning() {
+  return window['go']['main']['App']['CheckMinecraftRunning']();
 }
 
 export function CloudUpload(arg1, arg2) {
   return window['go']['main']['App']['CloudUpload'](arg1, arg2);
+}
+
+export function GetUserData() {
+  return window['go']['main']['App']['GetUserData']();
 }
 
 export function GetWorlds(arg1) {
@@ -20,6 +24,10 @@ export function GetWorlds(arg1) {
 
 export function GoogleAuth() {
   return window['go']['main']['App']['GoogleAuth']();
+}
+
+export function SaveUserData(arg1, arg2) {
+  return window['go']['main']['App']['SaveUserData'](arg1, arg2);
 }
 
 export function UserAuthCode(arg1) {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
-
 	"net/http"
 	"os"
 	"strings"
@@ -103,11 +103,27 @@ func saveToken(path string, token *oauth2.Token) {
 
 // BEGIN GOOGLE DRIVE API
 func UploadFile(ctx context.Context, srv *drive.Service, file *os.File, parentId string) (*drive.File, error) {
+	var parents []string
+	if parentId != "" {
+		parents = []string{parentId}
+	}
 	fileName := strings.Split(file.Name(), "/")[len(strings.Split(file.Name(), "/"))-1]
+	// check if file already exists on drive if so delete it
+	existingFile, err := FindFileByName(srv, fileName)
+	if err != nil {
+		println("File not found on drive, creating new file...")
+	} else {
+		println("File already exists on drive, deleting existing file...")
+		err = srv.Files.Delete(existingFile.Id).Do()
+		if err != nil {
+			return nil, fmt.Errorf("unable to delete existing file: %v", err)
+		}
+		println("Deleted existing file successfully")
+	}
 	f := &drive.File{
 		Name:     fileName,
 		MimeType: "application/octet-stream",
-		Parents:  []string{parentId},
+		Parents:  parents,
 	}
 	res, err := srv.Files.Create(f).Media(file).Do()
 	if err != nil {
@@ -133,6 +149,37 @@ func findFolder(srv *drive.Service, name string, parentId string) (string, error
 		return res.Files[0].Id, nil // return first match
 	}
 	return "", nil // not found
+}
+
+func FindFileByName(srv *drive.Service, name string) (*drive.File, error) {
+	res, err := srv.Files.List().
+		Q(fmt.Sprintf("name = '%s' and trashed = false", name)).
+		Fields("files(id, name, mimeType)").
+		Do()
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Files) == 0 {
+		return nil, fmt.Errorf("file '%s' not found", name)
+	}
+	return res.Files[0], nil
+}
+
+func DownloadFile(ctx context.Context, srv *drive.Service, fileID, localPath string) error {
+	resp, err := srv.Files.Get(fileID).Download()
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	out, err := os.Create(localPath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
 }
 
 func UploadFolder(srv *drive.Service, filePath string, parentId string) (string, error) {
