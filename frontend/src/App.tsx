@@ -41,7 +41,7 @@ function App() {
       })
     }
 
-    const handleCode = () => {
+    const verifyCode = () => {
       if (userCode !== null && userCode.length > 0) {
         UserAuthCode(userCode)
         setShowCode(false);
@@ -74,7 +74,7 @@ function App() {
           : 'cursor-pointer hover:text-zinc-50'
       }`
 
-    // UserAuthCode
+
     return (
         <div id="App">
           <div className="flex flex-col gap-5 justify-center items-center">
@@ -135,7 +135,7 @@ function App() {
             {showCode && (
               <div className="flex justify-center items-center gap-2">
                 <input type="text" placeholder="4/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" value={userCode} onChange={(e) => setUserCode(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
-                <button onClick={handleCode} className={getButtonClass(false)}>Login</button>
+                <button onClick={verifyCode} className={getButtonClass(!userCode)}>Login</button>
               </div>
             )}
           </div>

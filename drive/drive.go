@@ -10,17 +10,21 @@ import (
 	"os"
 	"strings"
 
+	_ "embed"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 )
 
+//go:embed assets/credentials.json
+var credentialsJSON []byte
+
 // built off of quickstart example from google drive api w/ go (adjusted for UX)
 func getClient(config *oauth2.Config) *http.Client {
 	// local token file should already exist by now
-	tokFile := "token.json"
-	tok, err := tokenFromFile(tokFile)
+	tok, err := tokenFromFile()
 	if err != nil {
 		println(err)
 	}
@@ -31,8 +35,7 @@ func getURL(config *oauth2.Config) string {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
-	tokFile := "token.json"
-	_, err := tokenFromFile(tokFile)
+	_, err := tokenFromFile()
 	if err != nil {
 		// tok = getTokenFromWeb(config)
 		authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
@@ -42,11 +45,8 @@ func getURL(config *oauth2.Config) string {
 	return ""
 }
 
-func HandleAuthCode(code string) *http.Client {
-	b, err := os.ReadFile("credentials.json")
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
+func VerifyAuthCode(code string) *http.Client {
+	b := credentialsJSON
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
@@ -79,7 +79,9 @@ func HandleAuthCode(code string) *http.Client {
 // }
 
 // Retrieves a token from a local file.
-func tokenFromFile(file string) (*oauth2.Token, error) {
+func tokenFromFile() (*oauth2.Token, error) {
+	home, _ := os.UserHomeDir()
+	file := home + "/.minevcs/token.json"
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -91,9 +93,18 @@ func tokenFromFile(file string) (*oauth2.Token, error) {
 }
 
 // Saves a token to a file path.
-func saveToken(path string, token *oauth2.Token) {
-	fmt.Printf("Saving credential file to: %s\n", path)
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+func saveToken(tokenFile string, token *oauth2.Token) {
+	home, _ := os.UserHomeDir()
+	// create a .minevcs folder if it doesn't exist
+	if _, err := os.Stat(home + "/.minevcs"); os.IsNotExist(err) {
+		err = os.Mkdir(home+"/.minevcs", 0700)
+		if err != nil {
+			log.Fatalf("Unable to create .minevcs folder: %v", err)
+		}
+	}
+	tokenSavePath := home + "/.minevcs/" + tokenFile
+	fmt.Printf("Saving token file to: %s\n", tokenSavePath)
+	f, err := os.OpenFile(tokenSavePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Fatalf("Unable to cache oauth token: %v", err)
 	}
@@ -248,32 +259,26 @@ func UploadFolder(srv *drive.Service, filePath string, parentId string) (string,
 	return created.Id, nil
 }
 
-func InitDrive() (*drive.Service, error) {
+func InitDrive() (context.Context, *drive.Service, error) {
 	// Create Drive service
 	ctx := context.Background()
-	b, err := os.ReadFile("credentials.json")
-	if err != nil {
-		return nil, fmt.Errorf("unable to read client secret file: %w", err)
-	}
+	b := credentialsJSON
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse client secret file to config: %w", err)
+		return nil, nil, fmt.Errorf("unable to parse client secret file to config: %w", err)
 	}
 	client := getClient(config)
 	srv, err := drive.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		return nil, fmt.Errorf("unable to create Drive client: %w", err)
+		return nil, nil, fmt.Errorf("unable to create Drive client: %w", err)
 	}
 
-	return srv, nil
+	return ctx, srv, nil
 }
 
 func Authenticate() (string, error) {
 	// ctx := context.Background()
-	b, err := os.ReadFile("credentials.json")
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
+	b := credentialsJSON
 
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {

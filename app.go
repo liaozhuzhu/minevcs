@@ -302,7 +302,7 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	// 	files = append(files, entry.Name())
 	// }
 	// return files, nil
-	srv, err := drive.InitDrive()
+	ctx, srv, err := drive.InitDrive()
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +317,6 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 		return nil, err
 	}
 	defer file.Close()
-	ctx := context.Background()
 	createdFile, err := drive.UploadFile(ctx, srv, file, "")
 	if err != nil {
 		return nil, err
@@ -340,11 +339,13 @@ func (a *App) GoogleAuth() (string, error) {
 }
 
 func (a *App) UserAuthCode(code string) {
-	drive.HandleAuthCode(code)
+	drive.VerifyAuthCode(code)
 }
 
 func (a *App) CheckIfAuthenticated() (bool, error) {
-	_, err := os.Stat("token.json")
+	home, _ := os.UserHomeDir()
+	pathToToken := filepath.Join(home, ".minevcs", "token.json")
+	_, err := os.Stat(pathToToken)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
@@ -356,8 +357,7 @@ func (a *App) CheckIfAuthenticated() (bool, error) {
 
 func (a *App) pullWorld() {
 	println("Downloading world from Drive...")
-	ctx := context.Background()
-	srv, err := drive.InitDrive()
+	ctx, srv, err := drive.InitDrive()
 	if err != nil {
 		println("Error initializing Drive:", err.Error())
 		return
