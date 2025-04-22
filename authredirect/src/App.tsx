@@ -11,7 +11,6 @@ function App() {
     const code = searchParams.get('code')
     if (code) {
       setCode(code)
-      setSearchParams({})
     } else {
       console.error('No code found in URL')
     }
@@ -21,7 +20,7 @@ function App() {
   if (!code || code.length === 0) {
     return <h1>MINEVCS REDIRECT</h1>
   }
-  
+
   return (
     <div style={{height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'start', overscrollBehavior: 'none', gap: '10px'}}>
       {copied && (
