@@ -362,16 +362,6 @@ func (a *App) GetUserData() (*UserData, error) {
 		return nil, err
 	}
 
-	// var config map[string]string
-	// err = json.Unmarshal(data, &config)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// a.minecraftLauncher = config["minecraftLauncher"]
-	// a.minecraftDirectory = config["minecraftDirectory"]
-	// a.worldName = config["worldName"]
-
 	return &UserData{
 		MinecraftLauncher:  a.minecraftLauncher,
 		MinecraftDirectory: a.minecraftDirectory,
@@ -385,6 +375,12 @@ func (a *App) emitLog(message string) {
 }
 
 func (a *App) startMinecraftMonitor() {
+	_, err := a.CheckIfAuthenticated()
+	if err != nil {
+		println("User is not authenticated, please authenticate first")
+		a.emitLog("User is not authenticated, please authenticate first")
+		return
+	}
 	println("Starting Minecraft monitor... 👀")
 	a.emitLog("Starting Minecraft monitor... 👀")
 	a.isMonitoring = true
