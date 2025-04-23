@@ -1,4 +1,4 @@
-# VCS For Minecraft Java Edition
+# Automatic Cloud Saving For Minecraft Java Edition
 
 ![logo](/build/appicon.png)
 
