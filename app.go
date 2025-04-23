@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type ProgressReader struct {
@@ -31,6 +32,7 @@ type App struct {
 	minecraftLauncher  string
 	minecraftDirectory string
 	worldName          string
+	isMonitoring       bool
 }
 
 func (pr *ProgressReader) Read(p []byte) (n int, err error) {
@@ -45,102 +47,42 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	// see if .minevcs / config.json exists
+
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs", "config.json")
 	if _, err := os.Stat(configPath); err != nil {
 		if os.IsNotExist(err) {
 			println("Config file not created yet, create a new one first")
+			a.emitLog("Config file not created yet, create a new one first")
 			return
 		}
 		println("Error checking config file:", err.Error())
+		a.emitLog("Error checking config file: " + err.Error())
 		return
 	}
+
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		println("Error reading config file:", err.Error())
+		a.emitLog("Error reading config file: " + err.Error())
 		return
 	}
+
 	var config map[string]string
 	err = json.Unmarshal(data, &config)
 	if err != nil {
 		println("Error parsing config file:", err.Error())
+		a.emitLog("Error parsing config file: " + err.Error())
 		return
 	}
+
 	a.minecraftLauncher = config["minecraftLauncher"]
 	a.minecraftDirectory = config["minecraftDirectory"]
 	a.worldName = config["worldName"]
 
-	go func() {
-		var minecraftWasRunning bool
-		var cancelPushLoop context.CancelFunc
-
-		for {
-			running, err := a.CheckMinecraftRunning()
-			if err != nil {
-				println("Error checking Minecraft status:", err.Error())
-			} else if running {
-				if !minecraftWasRunning {
-					println("Minecraft is running ✅")
-					minecraftWasRunning = true
-
-					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
-						a.pullWorld()
-					}
-
-					// // Start background 5 min push loop
-					// var pushCtx context.Context
-					// pushCtx, cancelPushLoop = context.WithCancel(context.Background())
-
-					// go func(ctx context.Context) {
-					// 	ticker := time.NewTicker(5 * time.Minute)
-					// 	defer ticker.Stop()
-
-					// 	for {
-					// 		select {
-					// 		case <-ticker.C:
-					// 			if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
-					// 				println("Pushing world to Drive...")
-					// 				_, err := a.CloudUpload(a.worldName, a.minecraftDirectory)
-					// 				if err != nil {
-					// 					println("Error uploading world to Drive:", err.Error())
-					// 				} else {
-					// 					println("World uploaded successfully")
-					// 				}
-					// 			} else {
-					// 				println("User not authenticated, skipping upload")
-					// 			}
-					// 		case <-ctx.Done():
-					// 			return
-					// 		}
-					// 	}
-					// }(pushCtx)
-				}
-			} else {
-				if minecraftWasRunning {
-					println("Minecraft exited ❌")
-
-					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
-						println("User exited game, pushing world to Drive...")
-						_, err := a.cloudUpload(a.worldName, a.minecraftDirectory)
-						if err != nil {
-							println("Error uploading world to Drive:", err.Error())
-						} else {
-							println("World uploaded successfully")
-						}
-					}
-
-					if cancelPushLoop != nil {
-						cancelPushLoop() // stop the 5 min loop
-						cancelPushLoop = nil
-					}
-				}
-				minecraftWasRunning = false
-			}
-
-			time.Sleep(2 * time.Second)
-		}
-	}()
+	if !a.isMonitoring {
+		a.startMinecraftMonitor()
+	}
 }
 
 func (a *App) CheckMinecraftRunning() (bool, error) {
@@ -258,30 +200,6 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 		return nil, err
 	}
 
-	// fullPath := home
-	// if worldName != "" {
-	// 	fullPath = filepath.Join(home, minecraftDirectory, worldName)
-	// }
-	// srv, err := drive.InitDrive()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// folderID, err := drive.UploadFolder(srv, fullPath, "")
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// println("FINISHED UPLOADING WORLD: ", folderID)
-
-	// entries, err := os.ReadDir(fullPath)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// var files []string
-	// for _, entry := range entries {
-	// 	files = append(files, entry.Name())
-	// }
-	// return files, nil
 	ctx, srv, err := drive.InitDrive()
 	if err != nil {
 		return nil, err
@@ -302,11 +220,13 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 		return nil, err
 	}
 	fmt.Println("Uploaded file:", createdFile.Name)
+	a.emitLog("Uploaded file: " + createdFile.Name)
 	err = os.Remove(zipFilePath)
 	if err != nil {
 		return nil, err
 	}
 	println("Deleted zip file:", zipFilePath)
+	a.emitLog("Deleted zip file: " + zipFilePath)
 	return []string{createdFile.Name}, nil
 }
 
@@ -337,34 +257,42 @@ func (a *App) CheckIfAuthenticated() (bool, error) {
 
 func (a *App) pullWorld() {
 	println("Downloading world from Drive...")
+	a.emitLog("Downloading world from Drive...")
 	ctx, srv, err := drive.InitDrive()
 	if err != nil {
 		println("Error initializing Drive:", err.Error())
+		a.emitLog("Error initializing Drive: " + err.Error())
 		return
 	}
 	worldToDownload := a.worldName
 	zipFile, err := drive.FindFileByName(srv, worldToDownload+".zip")
 	if err != nil {
 		println("Error finding file:", err.Error())
+		a.emitLog("Error finding file: " + err.Error())
 		return
 	}
 	if zipFile == nil {
 		println("No file found with the name:", worldToDownload+".zip")
+		a.emitLog("No file found with the name: " + worldToDownload + ".zip")
 		return
 	}
 	zipFilePath := filepath.Join(os.TempDir(), zipFile.Name)
 	err = drive.DownloadFile(ctx, srv, zipFile.Id, zipFilePath)
 	if err != nil {
 		println("Error downloading file:", err.Error())
+		a.emitLog("Error downloading file: " + err.Error())
 		return
 	}
 	println("World downloaded successfully")
+	a.emitLog("World downloaded successfully")
 	extractDir, err := a.unzipFolder(zipFilePath)
 	if err != nil {
 		println("Error extracting zip file:", err.Error())
+		a.emitLog("Error extracting zip file: " + err.Error())
 		return
 	}
 	println("World extracted successfully to:", extractDir)
+	a.emitLog("World extracted successfully to: " + extractDir)
 	// move the extracted folder to the minecraft directory
 	home, _ := os.UserHomeDir()
 	minecraftPath := filepath.Join(home, a.minecraftDirectory)
@@ -372,25 +300,32 @@ func (a *App) pullWorld() {
 	existingWorldPath := filepath.Join(minecraftPath, a.worldName)
 	if _, err := os.Stat(existingWorldPath); err == nil {
 		println("World already exists, deleting existing world...")
+		a.emitLog("World already exists, deleting existing world...")
 		err = os.RemoveAll(existingWorldPath)
 		if err != nil {
 			println("Error deleting existing world:", err.Error())
+			a.emitLog("Error deleting existing world: " + err.Error())
 			return
 		}
-		println("Existing world deleted successfully")
+		println("Existing world deleted successfully ✅")
+		a.emitLog("Existing world deleted successfully ✅")
 	}
 	// move the extracted folder to the minecraft directory
 	println("Writing world folder to:", minecraftPath)
+	a.emitLog("Writing world folder to: " + minecraftPath)
 	err = os.Rename(extractDir+"/"+a.worldName, filepath.Join(minecraftPath, a.worldName))
 	if err != nil {
 		println("Error moving extracted folder:", err.Error())
+		a.emitLog("Error moving extracted folder: " + err.Error())
 		return
 	}
-	println("World moved successfully to:", minecraftPath)
+	println("World moved successfully to:", minecraftPath+"✅")
+	a.emitLog("World moved successfully to: " + minecraftPath + "✅")
 }
 
 func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, worldName string) {
 	println("Saving user data locally")
+	a.minecraftLauncher = minecraftLauncher
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs")
 	os.MkdirAll(configPath, os.ModePerm)
@@ -399,37 +334,99 @@ func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, 
 	err := os.WriteFile(file, []byte(data), 0644)
 	if err != nil {
 		println("Error saving user data:", err.Error())
+		a.emitLog("Error saving user data: " + err.Error())
 	} else {
-		println("User data saved successfully")
+		println("User data saved successfully ✅")
+		a.emitLog("User data saved successfully ✅")
 	}
 	println("Config file path:", file)
+	a.emitLog("Config file path: " + file)
+	a.minecraftLauncher = minecraftLauncher
+	a.minecraftDirectory = minecraftDirectory
+	a.worldName = worldName
+	if !a.isMonitoring {
+		a.startMinecraftMonitor()
+	}
 }
 
 func (a *App) GetUserData() (*UserData, error) {
 	// first check if the config file exists locally (cached)
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs", "config.json")
-	data, err := os.ReadFile(configPath)
+	_, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			println("Config file not created yet, create a new one first")
+			a.emitLog("Config file not created yet, create a new one first")
 		}
 		return nil, err
 	}
 
-	var config map[string]string
-	err = json.Unmarshal(data, &config)
-	if err != nil {
-		return nil, err
-	}
+	// var config map[string]string
+	// err = json.Unmarshal(data, &config)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	a.minecraftLauncher = config["minecraftLauncher"]
-	a.minecraftDirectory = config["minecraftDirectory"]
-	a.worldName = config["worldName"]
+	// a.minecraftLauncher = config["minecraftLauncher"]
+	// a.minecraftDirectory = config["minecraftDirectory"]
+	// a.worldName = config["worldName"]
 
 	return &UserData{
 		MinecraftLauncher:  a.minecraftLauncher,
 		MinecraftDirectory: a.minecraftDirectory,
 		WorldName:          a.worldName,
 	}, nil
+}
+
+func (a *App) emitLog(message string) {
+	timestamp := time.Now().Format("15:04:05")
+	runtime.EventsEmit(a.ctx, "log", fmt.Sprintf("[%s] %s", timestamp, message))
+}
+
+func (a *App) startMinecraftMonitor() {
+	println("Starting Minecraft monitor... 👀")
+	a.emitLog("Starting Minecraft monitor... 👀")
+	a.isMonitoring = true
+	go func() {
+		var minecraftWasRunning bool
+		var cancelPushLoop context.CancelFunc
+
+		for {
+			running, err := a.CheckMinecraftRunning()
+			if err != nil {
+				println("Error checking Minecraft status:", err.Error())
+			} else if running {
+				if !minecraftWasRunning {
+					println("Minecraft is running ✅")
+					a.emitLog("Minecraft is running ✅")
+					minecraftWasRunning = true
+
+					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
+						a.pullWorld()
+					}
+				}
+			} else {
+				if minecraftWasRunning {
+					println("Minecraft exited ❌")
+					a.emitLog("Minecraft exited ❌")
+
+					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
+						println("User exited game, pushing world to Drive...")
+						a.emitLog("User exited game, pushing world to Drive...")
+						a.cloudUpload(a.worldName, a.minecraftDirectory)
+					}
+					if cancelPushLoop != nil {
+						cancelPushLoop()
+						cancelPushLoop = nil
+					}
+				} else {
+					a.emitLog("Minecraft is not running ⏰")
+				}
+				minecraftWasRunning = false
+			}
+
+			time.Sleep(2 * time.Second)
+		}
+	}()
 }

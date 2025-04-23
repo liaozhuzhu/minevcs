@@ -2,7 +2,7 @@ import {useState, useEffect} from 'react';
 import './App.css';
 import {GoogleAuth, UserAuthCode, CheckIfAuthenticated, SaveUserData, GetUserData} from "../wailsjs/go/main/App";
 import {CircleHelp} from "lucide-react"
-import {BrowserOpenURL} from "../wailsjs/runtime";
+import {BrowserOpenURL, EventsOn} from "../wailsjs/runtime";
 
 function App() {
     const [minecraftSavePath, setMinecraftSavePath] = useState<string>('');
@@ -12,7 +12,13 @@ function App() {
     const [userCode, setUserCode] = useState<string>('');
     const [showTooltip, setShowTooltip] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-
+    const [logs, setLogs] = useState<string[]>([]);
+    const userOS = window.navigator.platform;
+    console.log(userOS);
+    const isMac = userOS.startsWith("Mac");
+    const defaultMinecraftLauncherPath = isMac ? "/Applications/Minecraft.app/Contents/MacOS/launcher" : "C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe";
+    const defaultMinecraftSavePath = isMac ? "/Library/Application Support/minecraft/saves/" : "C:\\Users\\%username%\\AppData\\Roaming\\.minecraft\\saves\\";
+ 
     useEffect(() => {
       CheckIfAuthenticated().then((isAuth: boolean) => {
         setIsAuthenticated(isAuth);
@@ -27,7 +33,22 @@ function App() {
           console.log("User hasn't set their data yet")
         }
       });     
+
+      const off = EventsOn("log", (msg) => {
+        setLogs((prev) => [...prev.slice(-199), msg as string]);
+      });
+    
+      return () => {
+        off();
+      };
     }, []);
+
+    useEffect(() => {
+      const logsElement = document.getElementById('logs');
+      if (logsElement) {
+        logsElement.scrollTop = logsElement.scrollHeight;
+      }
+    }, [logs]);
 
     const handleAuth = () => {
       GoogleAuth().then((url: string) => {
@@ -58,12 +79,11 @@ function App() {
     }
 
     const getButtonClass = (disabled: boolean) =>
-      `border text-zinc-500 rounded-md px-4 py-2 transition duration-300 ${
-        disabled
-          ? 'opacity-50 cursor-not-allowed'
-          : 'cursor-pointer hover:text-zinc-50'
-      }`
-
+    `border text-zinc-500 rounded-md px-4 py-2 transition duration-300 ${
+      disabled
+        ? 'opacity-50 cursor-not-allowed'
+        : 'cursor-pointer hover:text-zinc-50'
+    }`
 
     return (
         <div id="App">
@@ -72,21 +92,24 @@ function App() {
             <form className="flex gap-8 items-center justify-center flex-col">
             <div className="flex justify-center items-start flex-col gap-2">
               <div className="flex gap-2 items-center justify-center relative">
-                    <label htmlFor="file-path">Minecraft Exe Path:</label>
-                    <CircleHelp size={15} onMouseEnter={() => setShowTooltip('launch')} onMouseLeave={() => setShowTooltip(null)}/>
-                    {showTooltip === 'launch' && (
-                      <div className="absolute top-6 left-0 bg-white text-black p-2 rounded-md shadow-md z-10">
-                        <p className="text-xs">You can find your Launcher exe path in your finder.</p>
-                        <ol className='list-decimal list-inside'>
-                          <li className="text-xs">Find your Minecraft App</li>
-                          <li className="text-xs">Right click and click "Show Package Contents"</li>
-                          <li className="text-xs">Inside "Contents" find your OS folder and finally copy paste the file path to the <pre>launcher.exe</pre></li>
-                          <li className="text-xs">For example: <pre>/Application/Minecraft.app/Contents/MacOS/launcher</pre></li>
-                        </ol>
-                        </div>)
-                    }
-                </div>
+                  <label htmlFor="file-path">Minecraft Exe Path:</label>
+                  <CircleHelp size={15} onMouseEnter={() => setShowTooltip('launch')} onMouseLeave={() => setShowTooltip(null)}/>
+                  {showTooltip === 'launch' && (
+                    <div className="absolute top-6 left-0 bg-white text-black p-2 rounded-md shadow-md z-10">
+                      <p className="text-xs">You can find your Launcher exe path in your finder.</p>
+                      <ol className='list-decimal list-inside'>
+                        <li className="text-xs">Find your Minecraft App</li>
+                        <li className="text-xs">Right click and click "Show Package Contents"</li>
+                        <li className="text-xs">Inside "Contents" find your OS folder and finally copy paste the file path to the <pre>launcher.exe</pre></li>
+                        <li className="text-xs">For example: <pre>/Application/Minecraft.app/Contents/MacOS/launcher</pre></li>
+                      </ol>
+                      </div>)
+                  }
+              </div>
+              <div className="flex gap-2 items-center justify-center">
                 <input type="text" placeholder="/Applications/Minecraft.app/Contents/MacOS/launcher" id="file-path" value={minecraftLauncherPath} onChange={(e) => setMinecraftLauncherPath(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>              
+                <button onClick={() => setMinecraftLauncherPath(defaultMinecraftLauncherPath)} className={getButtonClass(false)} type="button">Default</button>
+              </div>
                 <div className="flex gap-2 items-center justify-center relative">
                   <label htmlFor="file-path">Minecraft Save Path:</label>
                   <CircleHelp size={15} onMouseEnter={() => setShowTooltip('save')} onMouseLeave={() => setShowTooltip(null)}/>
@@ -106,6 +129,7 @@ function App() {
                 </div>
                 <div className="flex justify-center items-center gap-2">
                   <input type="text" placeholder="/Library/Application Support/minecraft/saves/" id="file-path" value={minecraftSavePath} onChange={(e) => setSavePath(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
+                  <button onClick={() => setMinecraftSavePath(defaultMinecraftSavePath)} className={getButtonClass(false)} type="button">Default</button>
                 </div>
               </div>
               <div className={`flex justify-center items-start flex-col gap-2 w-full`}>
@@ -123,6 +147,14 @@ function App() {
                 <button onClick={verifyCode} className={getButtonClass(!userCode)}>Login</button>
               </div>
             )}
+            <div className="flex justify-center items-center flex-col w-full">
+            <h1 className="font-bold text-2xl">Logs</h1>
+            <div className="flex justify-start items-start outline flex-col w-full h-80 overflow-y-scroll" id='logs'>
+              {logs.map((log, index) => (
+                <pre key={index} className="text-sm">{log}</pre>
+              ))}
+            </div>
+          </div>
           </div>
         </div>
     )

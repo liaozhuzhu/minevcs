@@ -37,11 +37,14 @@ func getURL(config *oauth2.Config) string {
 	// time.
 	_, err := tokenFromFile()
 	if err != nil {
-		// tok = getTokenFromWeb(config)
-		authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+		// 🔥 Force consent to always get a refresh_token
+		authURL := config.AuthCodeURL(
+			"state-token",
+			oauth2.AccessTypeOffline,
+			oauth2.SetAuthURLParam("prompt", "consent"),
+		)
 		return authURL
 	}
-	// return config.Client(context.Background(), tok)
 	return ""
 }
 
@@ -59,24 +62,6 @@ func VerifyAuthCode(code string) *http.Client {
 	saveToken(tokFile, tok)
 	return config.Client(context.Background(), tok)
 }
-
-// // Request a token from the web, then returns the retrieved token.
-// func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
-// 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-// 	fmt.Printf("Go to the following link in your browser then type the "+
-// 		"authorization code: \n%v\n", authURL)
-
-// 	var authCode string
-// 	if _, err := fmt.Scan(&authCode); err != nil {
-// 		log.Fatalf("Unable to read authorization code %v", err)
-// 	}
-
-// 	tok, err := config.Exchange(context.TODO(), authCode)
-// 	if err != nil {
-// 		log.Fatalf("Unable to retrieve token from web %v", err)
-// 	}
-// 	return tok
-// }
 
 // Retrieves a token from a local file.
 func tokenFromFile() (*oauth2.Token, error) {
@@ -277,19 +262,12 @@ func InitDrive() (context.Context, *drive.Service, error) {
 }
 
 func Authenticate() (string, error) {
-	// ctx := context.Background()
 	b := credentialsJSON
-
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
 	client := getURL(config)
 
-	// _, err = drive.NewService(ctx, option.WithHTTPClient(client))
-	// if err != nil {
-	// 	log.Fatalf("Unable to retrieve Drive client: %v", err)
-	// }
-	// println("New token created successfully")
 	return client, nil
 }

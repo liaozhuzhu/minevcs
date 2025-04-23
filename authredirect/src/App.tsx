@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 
 function App() {
   const [code, setCode] = useState<string>('')
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const [copied, setCopied] = useState<boolean>(false)
 
   useEffect(() => {
