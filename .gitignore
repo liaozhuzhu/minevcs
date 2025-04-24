@@ -3,3 +3,4 @@ node_modules
 frontend/dist
 credentials.json
 token.json
+.DS_Store
