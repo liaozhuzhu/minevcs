@@ -359,15 +359,10 @@ func (a *App) GetUserData() (*UserData, error) {
 	}, nil
 }
 
-func (a *App) emitLog(message string) {
-	timestamp := time.Now().Format("15:04:05")
-	runtime.EventsEmit(a.ctx, "log", fmt.Sprintf("[%s] %s", timestamp, message))
-}
-
 func (a *App) startMinecraftMonitor() {
 	_, err := a.CheckIfAuthenticated()
 	if err != nil {
-		a.emitLog("Please authenticate first")
+		a.printAndEmit("Please authenticate first ❌")
 		return
 	}
 	a.printAndEmit("Monitoring Minecraft status... 👀")
@@ -435,5 +430,6 @@ func (a *App) createMinevcsDirectory() {
 
 func (a *App) printAndEmit(message string) {
 	println(message)
-	a.emitLog(message)
+	timestamp := time.Now().Format("15:04:05")
+	runtime.EventsEmit(a.ctx, "log", fmt.Sprintf("[%s] %s", timestamp, message))
 }
