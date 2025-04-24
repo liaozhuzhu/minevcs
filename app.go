@@ -47,32 +47,28 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-
+	a.createMinevcsDirectory()
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs", "config.json")
 	if _, err := os.Stat(configPath); err != nil {
 		if os.IsNotExist(err) {
-			println("Config file not created yet, create a new one first")
-			a.emitLog("Config file not created yet, create a new one first")
+			a.printAndEmit("Config file not created yet, create a new one first" + " ❌")
 			return
 		}
-		println("Error checking config file:", err.Error())
-		a.emitLog("Error checking config file: " + err.Error())
+		a.printAndEmit("Config file is corrupted, please create a new one ❌")
 		return
 	}
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		println("Error reading config file:", err.Error())
-		a.emitLog("Error reading config file: " + err.Error())
+		a.printAndEmit("Config file is corrupted, please create a new one ❌")
 		return
 	}
 
 	var config map[string]string
 	err = json.Unmarshal(data, &config)
 	if err != nil {
-		println("Error parsing config file:", err.Error())
-		a.emitLog("Error parsing config file: " + err.Error())
+		a.printAndEmit("Config file is corrupted, please create a new one ❌")
 		return
 	}
 
@@ -204,6 +200,21 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	if err != nil {
 		return nil, err
 	}
+
+	lockFilePath := filepath.Join(home, ".minevcs", "temp.lock")
+	if _, err := os.Stat(lockFilePath); os.IsNotExist(err) {
+		a.printAndEmit("Lock file not found, please restart the app")
+		return nil, fmt.Errorf("lock file not found")
+	}
+	lockFile, err := os.Open(lockFilePath)
+	if err != nil {
+		return nil, err
+	}
+	tempLockFile, err := drive.UploadFile(ctx, srv, lockFile, "")
+	if err != nil {
+		return nil, err
+	}
+
 	// zip the world folder
 	worldPath := filepath.Join(home, minecraftDirectory, worldName)
 	zipFilePath, err := a.zipFolder(worldPath)
@@ -219,14 +230,16 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Uploaded file:", createdFile.Name)
-	a.emitLog("Uploaded file: " + createdFile.Name)
+	a.printAndEmit("World uploaded successfully to Drive ✅")
 	err = os.Remove(zipFilePath)
 	if err != nil {
 		return nil, err
 	}
-	println("Deleted zip file:", zipFilePath)
-	a.emitLog("Deleted zip file: " + zipFilePath)
+	a.printAndEmit("Compressed world deleted successfully from local storage ✅")
+	err = drive.DeleteFile(srv, tempLockFile.Id)
+	if err != nil {
+		return nil, err
+	}
 	return []string{createdFile.Name}, nil
 }
 
@@ -256,91 +269,79 @@ func (a *App) CheckIfAuthenticated() (bool, error) {
 }
 
 func (a *App) pullWorld() {
-	println("Downloading world from Drive...")
-	a.emitLog("Downloading world from Drive...")
 	ctx, srv, err := drive.InitDrive()
 	if err != nil {
-		println("Error initializing Drive:", err.Error())
-		a.emitLog("Error initializing Drive: " + err.Error())
+		a.printAndEmit("Error initializing Drive: " + err.Error() + " ❌")
 		return
 	}
+	_, err = drive.FindFileByName(srv, "temp.lock")
+	if err == nil {
+		a.printAndEmit("World upload in progress from another machine, please restart the app and try again soon ❌")
+		return
+	}
+	a.printAndEmit("Downloading world from Drive... ⌛️")
 	worldToDownload := a.worldName
 	zipFile, err := drive.FindFileByName(srv, worldToDownload+".zip")
 	if err != nil {
-		println("Error finding file:", err.Error())
-		a.emitLog("Error finding file: " + err.Error())
+		a.printAndEmit("Error finding file: " + err.Error() + " (it may not exist yet)")
 		return
 	}
 	if zipFile == nil {
-		println("No file found with the name:", worldToDownload+".zip")
-		a.emitLog("No file found with the name: " + worldToDownload + ".zip")
+		a.printAndEmit("No file found with the name: " + worldToDownload + ".zip ❌")
 		return
 	}
 	zipFilePath := filepath.Join(os.TempDir(), zipFile.Name)
 	err = drive.DownloadFile(ctx, srv, zipFile.Id, zipFilePath)
 	if err != nil {
-		println("Error downloading file:", err.Error())
-		a.emitLog("Error downloading file: " + err.Error())
+		a.printAndEmit("Error downloading file: " + err.Error() + " ❌")
 		return
 	}
-	println("World downloaded successfully")
-	a.emitLog("World downloaded successfully")
+	a.printAndEmit("World downloaded successfully ✅")
 	extractDir, err := a.unzipFolder(zipFilePath)
 	if err != nil {
-		println("Error extracting zip file:", err.Error())
-		a.emitLog("Error extracting zip file: " + err.Error())
+		a.printAndEmit("Error extracting zip file: " + err.Error() + " ❌")
 		return
 	}
-	println("World extracted successfully to:", extractDir)
-	a.emitLog("World extracted successfully to: " + extractDir)
+	a.printAndEmit("World extracted successfully to: " + extractDir)
 	// move the extracted folder to the minecraft directory
 	home, _ := os.UserHomeDir()
 	minecraftPath := filepath.Join(home, a.minecraftDirectory)
 	// check if the minecraft world already exists
 	existingWorldPath := filepath.Join(minecraftPath, a.worldName)
 	if _, err := os.Stat(existingWorldPath); err == nil {
-		println("World already exists, deleting existing world...")
-		a.emitLog("World already exists, deleting existing world...")
+		a.printAndEmit("World already exists, deleting existing world...")
 		err = os.RemoveAll(existingWorldPath)
 		if err != nil {
-			println("Error deleting existing world:", err.Error())
-			a.emitLog("Error deleting existing world: " + err.Error())
+			a.printAndEmit("Error deleting existing world: " + err.Error() + " ❌")
 			return
 		}
-		println("Existing world deleted successfully ✅")
-		a.emitLog("Existing world deleted successfully ✅")
+		a.printAndEmit("Existing world deleted successfully ✅")
 	}
-	// move the extracted folder to the minecraft directory
-	println("Writing world folder to:", minecraftPath)
-	a.emitLog("Writing world folder to: " + minecraftPath)
 	err = os.Rename(extractDir+"/"+a.worldName, filepath.Join(minecraftPath, a.worldName))
 	if err != nil {
-		println("Error moving extracted folder:", err.Error())
-		a.emitLog("Error moving extracted folder: " + err.Error())
+		a.printAndEmit("Error moving extracted folder: " + err.Error() + " ❌")
 		return
 	}
-	println("World moved successfully to:", minecraftPath+"✅")
-	a.emitLog("World moved successfully to: " + minecraftPath + "✅")
+	a.printAndEmit("World pulled successfully from Drive ✅")
 }
 
 func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, worldName string) {
-	println("Saving user data locally")
+	a.printAndEmit("Saving user data locally...")
 	a.minecraftLauncher = minecraftLauncher
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs")
-	os.MkdirAll(configPath, os.ModePerm)
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		a.printAndEmit("Minevcs directory not found, please create a new one first")
+		return
+	}
 	file := filepath.Join(configPath, "config.json")
 	data := fmt.Sprintf(`{"minecraftLauncher": "%s", "minecraftDirectory": "%s", "worldName": "%s", "lastUpdated": "%s"}`, minecraftLauncher, minecraftDirectory, worldName, time.Now().Format(time.RFC3339))
 	err := os.WriteFile(file, []byte(data), 0644)
 	if err != nil {
-		println("Error saving user data:", err.Error())
-		a.emitLog("Error saving user data: " + err.Error())
+		a.printAndEmit("Error saving user data: " + err.Error())
 	} else {
-		println("User data saved successfully ✅")
-		a.emitLog("User data saved successfully ✅")
+		a.printAndEmit("User data saved successfully ✅")
 	}
-	println("Config file path:", file)
-	a.emitLog("Config file path: " + file)
 	a.minecraftLauncher = minecraftLauncher
 	a.minecraftDirectory = minecraftDirectory
 	a.worldName = worldName
@@ -350,17 +351,6 @@ func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, 
 }
 
 func (a *App) GetUserData() (*UserData, error) {
-	// first check if the config file exists locally (cached)
-	home, _ := os.UserHomeDir()
-	configPath := filepath.Join(home, ".minevcs", "config.json")
-	_, err := os.ReadFile(configPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			println("Config file not created yet, create a new one first")
-			a.emitLog("Config file not created yet, create a new one first")
-		}
-		return nil, err
-	}
 
 	return &UserData{
 		MinecraftLauncher:  a.minecraftLauncher,
@@ -377,12 +367,10 @@ func (a *App) emitLog(message string) {
 func (a *App) startMinecraftMonitor() {
 	_, err := a.CheckIfAuthenticated()
 	if err != nil {
-		println("User is not authenticated, please authenticate first")
-		a.emitLog("User is not authenticated, please authenticate first")
+		a.emitLog("Please authenticate first")
 		return
 	}
-	println("Starting Minecraft monitor... 👀")
-	a.emitLog("Starting Minecraft monitor... 👀")
+	a.printAndEmit("Monitoring Minecraft status... 👀")
 	a.isMonitoring = true
 	go func() {
 		var minecraftWasRunning bool
@@ -391,11 +379,10 @@ func (a *App) startMinecraftMonitor() {
 		for {
 			running, err := a.CheckMinecraftRunning()
 			if err != nil {
-				println("Error checking Minecraft status:", err.Error())
+				a.printAndEmit("Error checking Minecraft status: " + err.Error() + " ❌")
 			} else if running {
 				if !minecraftWasRunning {
-					println("Minecraft is running ✅")
-					a.emitLog("Minecraft is running ✅")
+					a.printAndEmit("Minecraft is running ✅")
 					minecraftWasRunning = true
 
 					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
@@ -404,12 +391,10 @@ func (a *App) startMinecraftMonitor() {
 				}
 			} else {
 				if minecraftWasRunning {
-					println("Minecraft exited ❌")
-					a.emitLog("Minecraft exited ❌")
+					a.printAndEmit("Minecraft exited ❌")
 
 					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
-						println("User exited game, pushing world to Drive...")
-						a.emitLog("User exited game, pushing world to Drive...")
+						a.printAndEmit("User exited game, pushing world to Drive...")
 						a.cloudUpload(a.worldName, a.minecraftDirectory)
 					}
 					if cancelPushLoop != nil {
@@ -417,7 +402,7 @@ func (a *App) startMinecraftMonitor() {
 						cancelPushLoop = nil
 					}
 				} else {
-					a.emitLog("Minecraft is not running ⏰")
+					a.printAndEmit("Minecraft is not running ⌛️")
 				}
 				minecraftWasRunning = false
 			}
@@ -425,4 +410,30 @@ func (a *App) startMinecraftMonitor() {
 			time.Sleep(2 * time.Second)
 		}
 	}()
+}
+
+func (a *App) createMinevcsDirectory() {
+	home, _ := os.UserHomeDir()
+	minevcsPath := filepath.Join(home, ".minevcs")
+	if _, err := os.Stat(minevcsPath); os.IsNotExist(err) {
+		err = os.MkdirAll(minevcsPath, os.ModePerm)
+		if err != nil {
+			a.printAndEmit("Error creating .minevcs directory: " + err.Error() + " ❌")
+			return
+		}
+	}
+	lockFilePath := filepath.Join(minevcsPath, "temp.lock")
+	if _, err := os.Stat(lockFilePath); os.IsNotExist(err) {
+		err = os.WriteFile(lockFilePath, []byte(""), 0644)
+		if err != nil {
+			a.printAndEmit("Error creating lock file: " + err.Error() + " ❌")
+			return
+		}
+	}
+	a.printAndEmit("Initialized Service successfully ✅")
+}
+
+func (a *App) printAndEmit(message string) {
+	println(message)
+	a.emitLog(message)
 }

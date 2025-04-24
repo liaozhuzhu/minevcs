@@ -110,7 +110,7 @@ func UploadFile(ctx context.Context, srv *drive.Service, file *os.File, parentId
 		println("File not found on drive, creating new file...")
 	} else {
 		println("File already exists on drive, deleting existing file...")
-		err = srv.Files.Delete(existingFile.Id).Do()
+		err = DeleteFile(srv, existingFile.Id)
 		if err != nil {
 			return nil, fmt.Errorf("unable to delete existing file: %v", err)
 		}
@@ -126,6 +126,15 @@ func UploadFile(ctx context.Context, srv *drive.Service, file *os.File, parentId
 		return nil, fmt.Errorf("unable to create file: %v", err)
 	}
 	return res, nil
+}
+
+func DeleteFile(srv *drive.Service, fileId string) error {
+	err := srv.Files.Delete(fileId).Do()
+	if err != nil {
+		return fmt.Errorf("unable to delete file: %v", err)
+	}
+	fmt.Println("Deleted file:", fileId)
+	return nil
 }
 
 func findFolder(srv *drive.Service, name string, parentId string) (string, error) {
@@ -193,10 +202,11 @@ func UploadFolder(srv *drive.Service, filePath string, parentId string) (string,
 		println("Folder already exists:", existingId)
 		println("Deleting Existing Folder...")
 		// folder exists delete it so we can replace it
-		err = srv.Files.Delete(existingId).Do()
+		err = DeleteFile(srv, existingId)
 		if err != nil {
 			return "", fmt.Errorf("unable to delete existing folder: %v", err)
 		}
+		println("Deleted existing folder successfully")
 	}
 	folder := &drive.File{
 		Name:     name,

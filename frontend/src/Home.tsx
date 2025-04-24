@@ -98,7 +98,12 @@ function Home() {
             <button type="button" className={getButtonClass(false)} onClick={handleAuth}>Auth</button>
             {showCode && (
               <div className="flex justify-center items-center gap-2">
-                <input type="text" placeholder="4/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" value={userCode} onChange={(e) => setUserCode(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
+                <input 
+                type="text" 
+                placeholder="4/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
+                value={userCode} onChange={(e) => setUserCode(e.target.value)} 
+                className="border border-zinc-50 focus:ring-0 focus:outline-none rounded-md text-xs placeholder:opacity-50 px-2 py-3 w-80 bg-zinc-900 text-zinc-100"
+                />
                 <button onClick={verifyCode} className={getButtonClass(!userCode)}>Login</button>
               </div>
             )}
@@ -123,7 +128,7 @@ function Home() {
                   }
               </div>
               <div className="flex gap-2 items-center justify-center">
-                <input type="text" placeholder="/Applications/Minecraft.app/Contents/MacOS/launcher" id="file-path" value={minecraftLauncherPath} onChange={(e) => setMinecraftLauncherPath(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>              
+                <input type="text" placeholder="/Applications/Minecraft.app/Contents/MacOS/launcher" id="file-path" value={minecraftLauncherPath} onChange={(e) => setMinecraftLauncherPath(e.target.value)} className="border border-zinc-50 focus:ring-0 focus:outline-none rounded-md text-xs placeholder:opacity-50 px-2 py-3 w-80 bg-zinc-900 text-zinc-100"/>              
                 <button onClick={() => setMinecraftLauncherPath(defaultMinecraftLauncherPath)} className={getButtonClass(false)} type="button">Default</button>
               </div>
                 <div className="flex gap-2 items-center justify-center relative">
@@ -144,13 +149,19 @@ function Home() {
                   }
                 </div>
                 <div className="flex justify-center items-center gap-2">
-                  <input type="text" placeholder="/Library/Application Support/minecraft/saves/" id="file-path" value={minecraftSavePath} onChange={(e) => setSavePath(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
+                  <input type="text" 
+                    placeholder="/Library/Application Support/minecraft/saves/" 
+                    id="file-path" 
+                    value={minecraftSavePath} 
+                    onChange={(e) => setSavePath(e.target.value)} 
+                    className="border border-zinc-50 focus:ring-0 focus:outline-none rounded-md text-xs placeholder:opacity-50 px-2 py-3 w-80 bg-zinc-900 text-zinc-100"
+                    />
                   <button onClick={() => setMinecraftSavePath(defaultMinecraftSavePath)} className={getButtonClass(false)} type="button">Default</button>
                 </div>
               </div>
               <div className={`flex justify-center items-start flex-col gap-2 w-full`}>
                 <label htmlFor="world-name">Minecraft World To Sync:</label>
-                <input type="text" placeholder="World Name" id="world-name" value={worldName} onChange={(e) => setWorldName(e.target.value)} className="border border-zinc-300 rounded-md text-xs border-transparent focus:border-transparent focus:ring-0 placeholder:opacity-50 px-2 py-3 w-80"/>
+                <input type="text" placeholder="World Name" id="world-name" value={worldName} onChange={(e) => setWorldName(e.target.value)} className="border border-zinc-50 focus:ring-0 focus:outline-none rounded-md text-xs placeholder:opacity-50 px-2 py-3 w-80 bg-zinc-900 text-zinc-100"/>
               </div>
               <div className="flex justify-center items-start gap-2">
                 <button type="button" className={getButtonClass(!worldName || !minecraftSavePath || !minecraftLauncherPath || !isAuthenticated)} disabled={!minecraftLauncherPath || !worldName || !minecraftSavePath || !isAuthenticated} onClick={saveUserSettings}>Save Settings</button>
