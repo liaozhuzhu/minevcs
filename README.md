@@ -1,16 +1,21 @@
 # Automatic Cloud Saving For Minecraft Java Edition
 
-<img src="./build/appicon.png" width="100">
+<div style="display:flex; flex-direction: column;justify-content: center; align-items: center">
+    <img src="./build/appicon.png" width="200">
+    <img src="./assets/design.png" alt="design for minevcs">
+</div>
 
 ## About
 
-Enabling automatic cloud save for Minecraft Java Edition. 
+Enabling automatic cloud save for Minecraft Java Edition. **Currently only for MacOS**
 
 ## Future Goals
 
 - Speed up upload
 
 - Detect if change has actually occurred before pushing world
+
+- Windows Support
 
 Generating the `.dmg` (note to myself):
 ```bash
