@@ -10,6 +10,7 @@ import LaunchTooltip from './components/LaunchTooltip';
 function Home() {
     const [minecraftSavePath, setMinecraftSavePath] = useState<string>('');
     const [minecraftLauncherPath, setMinecraftLauncherPath] = useState<string>('');
+    const [authError, setAuthError] = useState<string | null>(null);
     const [worldName, setWorldName] = useState<string>('');
     const [showCode, setShowCode] = useState<boolean>(false);
     const [userCode, setUserCode] = useState<string>('');
@@ -62,8 +63,13 @@ function Home() {
     const verifyCode = () => {
       if (userCode !== null && userCode.length > 0) {
         UserAuthCode(userCode)
-        setShowCode(false);
-        setIsAuthenticated(true);
+          .then(() => {
+            setShowCode(false);
+            setIsAuthenticated(true);
+          })
+          .catch((error) => {
+            setAuthError(error);
+          });
       } else {
         console.error("User code is empty");
       }
@@ -112,6 +118,9 @@ function Home() {
                     <img src="/drive.png" alt="Google Logo" className="w-8 h-8"/>
                     <p className="text-sm">Authorize Redirect</p>
                 </div>
+                {authError && (
+                    <p className="text-red-500 text-xs">{authError}</p>
+                )}
             </div>
         )
          : (

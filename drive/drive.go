@@ -48,19 +48,19 @@ func getURL(config *oauth2.Config) string {
 	return ""
 }
 
-func VerifyAuthCode(code string) *http.Client {
+func VerifyAuthCode(code string) (*http.Client, error) {
 	b := credentialsJSON
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
+		return nil, fmt.Errorf("Unable to parse client secret file to config: %v", err)
 	}
 	tok, err := config.Exchange(context.TODO(), code)
 	if err != nil {
-		log.Fatalf("Unable to retrieve token from web %v", err)
+		return nil, fmt.Errorf("Unable to verify token: %v", err)
 	}
 	tokFile := "token.json"
 	saveToken(tokFile, tok)
-	return config.Client(context.Background(), tok)
+	return config.Client(context.Background(), tok), nil
 }
 
 // Retrieves a token from a local file.

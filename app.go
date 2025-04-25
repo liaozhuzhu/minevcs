@@ -251,8 +251,12 @@ func (a *App) GoogleAuth() (string, error) {
 	return url, nil
 }
 
-func (a *App) UserAuthCode(code string) {
-	drive.VerifyAuthCode(code)
+func (a *App) UserAuthCode(code string) error {
+	_, err := drive.VerifyAuthCode(code)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	return nil
 }
 
 func (a *App) CheckIfAuthenticated() (bool, error) {
