@@ -88,28 +88,33 @@ function Home() {
     }`
 
     return (
-      <div className="flex flex-col gap-5 justify-center items-center relative py-6">
-        <Link to="/about" className="absolute top-0 right-0 mx-5 my-6 cursor-pointer opacity-75 hover:opacity-100 transition duration-300">
+      <div className="flex flex-col justify-center items-center h-screen">
+        {/* <Link to="/about" className="absolute top-0 right-0 mx-5 my-6 cursor-pointer opacity-75 hover:opacity-100 transition duration-300">
             <Info size={20}/>
-        </Link>
-        <h1 className="font-bold text-4xl">MINEVCS</h1>
+        </Link> */}
         {!isAuthenticated ? (
-          <>
-            <p>Please authorize Google Drive access</p>
-            <button type="button" className={getButtonClass(false)} onClick={handleAuth}>Auth</button>
-            {showCode && (
-              <div className="flex justify-center items-center gap-2">
-                <input 
-                type="text" 
-                placeholder="4/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
-                value={userCode} onChange={(e) => setUserCode(e.target.value)} 
-                className="border border-zinc-50 focus:ring-0 focus:outline-none rounded-md text-xs placeholder:opacity-50 px-2 py-3 w-80 bg-zinc-900 text-zinc-100"
-                />
-                <button onClick={verifyCode} className={getButtonClass(!userCode)}>Login</button>
-              </div>
-            )}
-          </>
-        ) : (
+            <div className="flex justify-start items-center flex-col gap-2 shadow-xl w-[500px] p-4 rounded-3xl bg-zinc-800">
+                <img src="/logo.png" alt="MineVCS Logo" className="w-30 h-30"/>
+                <p className="text-lg">{showCode ? 'Please Enter Your Code' : 'Please Authorize Google Drive access'}</p>
+                {showCode && (
+                <div className="flex justify-center items-center gap-2 mt-10">
+                    <input 
+                    type="text" 
+                    placeholder="4/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
+                    value={userCode} onChange={(e) => setUserCode(e.target.value)} 
+                    autoFocus
+                    className="shadow-xl bg-zinc-50 focus:ring-0 focus:outline-none rounded-md text-xs placeholder:opacity-50 px-2 py-3 w-80 text-zinc-900"
+                    />
+                    <button onClick={verifyCode} className={getButtonClass(!userCode)}>Verify</button>
+                </div>
+                )}
+                <div className="my-10 cursor-pointer text-zinc-900 opacity-80 hover:opacity-100 bg-zinc-50 rounded-xl px-4 py-2 transition duration-300 flex justify-between items-center gap-3" onClick={handleAuth}>
+                    <img src="/drive.png" alt="Google Logo" className="w-8 h-8"/>
+                    <p className="text-sm">Authorize Redirect</p>
+                </div>
+            </div>
+        )
+         : (
           <>
             <form className="flex gap-8 items-center justify-center flex-col">
             <div className="flex justify-center items-start flex-col gap-2">

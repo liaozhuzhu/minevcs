@@ -1,6 +1,8 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
 :root {
-  background-color: rgb(29, 29, 29);
+  background-color: oklch(21% 0.006 285.885);
   color: rgb(228, 228, 228);
+  font-family: "Inter", sans-serif;
 }
