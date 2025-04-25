@@ -13,7 +13,7 @@
 Enabling automatic cloud save for Minecraft Java Edition.
 
 ![macOS](https://img.shields.io/badge/macOS-supported-brightgreen?style=flat-square&logo=apple&logoColor=white)
-![Windows](https://img.shields.io/badge/Windows-not%20yet-red?style=flat-square&logo=windows&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-coming%20soon-red?style=flat-square&logo=windows&logoColor=white)
 
 
 ## Future Goals
