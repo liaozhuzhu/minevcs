@@ -10,7 +10,33 @@
 
 ## About
 
-Enabling automatic cloud save for Minecraft Java Edition. **Currently only for MacOS**
+Enabling automatic cloud save for Minecraft Java Edition.
+
+<div style="display: flex; gap: 1rem; align-items: center;">
+
+  <div style="display: flex; align-items: center; gap: 0.5rem;">
+    <div style="width: 10px; height: 10px; background-color: #00FF00; border-radius: 50%; animation: blinkGreen 1s infinite;"></div>
+    <span>macOS</span>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 0.5rem;">
+    <div style="width: 10px; height: 10px; background-color: #FF0000; border-radius: 50%; animation: blinkRed 1s infinite;"></div>
+    <span>Windows</span>
+  </div>
+
+</div>
+
+<style>
+@keyframes blinkGreen {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes blinkRed {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+</style>
+
 
 ## Future Goals
 
