@@ -4,6 +4,8 @@ import {GoogleAuth, UserAuthCode, CheckIfAuthenticated, SaveUserData, GetUserDat
 import {CircleHelp, Info} from "lucide-react"
 import {BrowserOpenURL, EventsOn} from "../wailsjs/runtime";
 import {Link} from "react-router-dom";
+import SaveTooltip from './components/SaveTooltip';
+import LaunchTooltip from './components/LaunchTooltip';
 
 function Home() {
     const [minecraftSavePath, setMinecraftSavePath] = useState<string>('');
@@ -15,7 +17,6 @@ function Home() {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [logs, setLogs] = useState<string[]>([]);
     const userOS = window.navigator.platform;
-    console.log(userOS);
     const isMac = userOS.startsWith("Mac");
     const defaultMinecraftLauncherPath = isMac ? "/Applications/Minecraft.app/Contents/MacOS/launcher" : "C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe";
     const defaultMinecraftSavePath = isMac ? "/Library/Application Support/minecraft/saves/" : "C:\\Users\\%username%\\AppData\\Roaming\\.minecraft\\saves\\";
@@ -115,17 +116,7 @@ function Home() {
               <div className="flex gap-2 items-center justify-center relative">
                   <label htmlFor="file-path">Minecraft Exe Path:</label>
                   <CircleHelp size={15} onMouseEnter={() => setShowTooltip('launch')} onMouseLeave={() => setShowTooltip(null)}/>
-                  {showTooltip === 'launch' && (
-                    <div className="absolute top-6 left-0 bg-white text-black p-2 rounded-md shadow-md z-10">
-                      <p className="text-xs">You can find your Launcher exe path in your finder.</p>
-                      <ol className='list-decimal list-inside'>
-                        <li className="text-xs">Find your Minecraft App</li>
-                        <li className="text-xs">Right click and click "Show Package Contents"</li>
-                        <li className="text-xs">Inside "Contents" find your OS folder and finally copy paste the file path to the <pre>launcher.exe</pre></li>
-                        <li className="text-xs">For example: <pre>/Application/Minecraft.app/Contents/MacOS/launcher</pre></li>
-                      </ol>
-                      </div>)
-                  }
+                  {showTooltip === 'launch' && (<LaunchTooltip/>)}
               </div>
               <div className="flex gap-2 items-center justify-center">
                 <input type="text" placeholder="/Applications/Minecraft.app/Contents/MacOS/launcher" id="file-path" value={minecraftLauncherPath} onChange={(e) => setMinecraftLauncherPath(e.target.value)} className="border border-zinc-50 focus:ring-0 focus:outline-none rounded-md text-xs placeholder:opacity-50 px-2 py-3 w-80 bg-zinc-900 text-zinc-100"/>              
@@ -134,19 +125,7 @@ function Home() {
                 <div className="flex gap-2 items-center justify-center relative">
                   <label htmlFor="file-path">Minecraft Save Path:</label>
                   <CircleHelp size={15} onMouseEnter={() => setShowTooltip('save')} onMouseLeave={() => setShowTooltip(null)}/>
-                  {showTooltip === 'save' && (
-                    <div className="absolute top-6 left-0 bg-white text-black p-2 rounded-md shadow-md z-10">
-                      <p className="text-xs">You can find your save path in the Minecraft Launcher.</p>
-                      <ol className='list-decimal list-inside'>
-                        <li className="text-xs">Open Minecraft Launcher</li>
-                        <li className="text-xs">Click "Installations"</li>
-                        <li className="text-xs">Click the folder icon next to the installation you want to use</li>
-                        <li className="text-xs">Go to your folder labeled "saves"</li>
-                        <li className="text-xs">Copy the path from the address bar starting from <pre>/Library/</pre></li>
-                        <li className="text-xs">For example: <pre>/Library/Application Support/minecraft/saves/</pre></li>
-                      </ol>
-                      </div>)
-                  }
+                  {showTooltip === 'save' && (<SaveTooltip/>)}
                 </div>
                 <div className="flex justify-center items-center gap-2">
                   <input type="text" 
