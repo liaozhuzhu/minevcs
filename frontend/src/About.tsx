@@ -31,7 +31,7 @@ const About = () => {
                     Upon detecting the Minecraft launcher starting, MineVCS pulls the latest version of the specified world from Google Drive, ensuring that the local version is up to date.
                     </p>
                     <p className="text-zinc-100 text-sm">
-                    When the user exits Minecraft, MineVCS first uploads a temporary <code>lockfile</code> so any pulls done on a user's separate machine know an upload is in progress. Following that, MineVCS then zips and uploads the updated world folder to Google Drive.
+                    When the user exits Minecraft, MineVCS first uploads a temporary <code>lockfile</code> so any subsequent reads done on a user's separate machine know an upload is in progress and don't pull. Following that, MineVCS then zips and uploads the updated world folder to Google Drive.
                     </p>
                     <img src="/detail_design.png" alt="detailed design" className="w-full mx-auto" />
                 </div>
