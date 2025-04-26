@@ -50,6 +50,9 @@ const About = () => {
                     <p className="text-zinc-100 text-sm">
                         MineVCS creates a <code>.minevcs</code> hidden directory in the user's home directory to store the <code>config</code> file as well as other necessary helper files. This is where the user's settings are stored, and it is recommended that users do not modify or delete this directory unless they know what they are doing.
                     </p>
+                    <p className="text-zinc-100 text-sm">
+                    MineVCS assumes a clean exit of the game performed by the user. This means actions such as powering off the device immediately after closing the game (or without closing the game at all) won't be cleanly handled by the application and could lead to corrupt or loss of data.
+                    </p>
                 </div>
 
                 <div className=" w-full text-start flex flex-col gap-5">

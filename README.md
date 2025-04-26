@@ -36,6 +36,7 @@ When the user exits Minecraft, MineVCS first uploads a temporary `lockfile` so t
 - MineVCS currently cannot distinguish between two `.zip` files with the same name in Google Drive. If a user has two worlds with the same name, MineVCS could mix them up. Hashing of world folders will be added in the future to prevent this.
 - MineVCS is currently only available for **MacOS** as of 04/26/2025 but Windows support is coming soon! (Since syncing is via Google Drive, there won't be any slowdowns between MacOS and Windows 😁)
 - MineVCS creates a hidden `.minevcs` directory in the user's home folder to store the `config` file and helper files. Users should avoid manually modifying this directory unless they know what they are doing.
+- MineVCS assumes a clean exit of the game performed by the user. This means actions such as powering off the device immediately after closing the game (or without closing the game at all) won't be cleanly handled by the application and could lead to corrupt or loss of data.
 
 ## Privacy
 
