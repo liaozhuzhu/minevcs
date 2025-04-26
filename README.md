@@ -9,7 +9,7 @@ MineVCS brings the functionality of automatic cloud saving to your Minecraft Jav
 
 ## How It Works (High Level)
 
-MineVCS syncs your Minecraft Java world folder to your personal Google Drive, mimicking cloud saving. When Minecraft launches, MineVCS pulls your latest save. When you exit the game, MineVCS uploads to your Drive — keeping everything in sync across devices.
+MineVCS syncs your Minecraft Java world folder to your personal Google Drive. When Minecraft launches, MineVCS pulls your latest save. When you exit the game, MineVCS uploads to your Drive — keeping everything in sync across devices.
 
 ![design](./assets/design.png)
 
