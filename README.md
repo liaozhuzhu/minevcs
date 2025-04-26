@@ -5,7 +5,14 @@
 ![Windows](https://img.shields.io/badge/Windows-coming%20soon-red?style=flat-square&logo=windows&logoColor=white)
 
 ## About
+
 MineVCS brings the functionality of automatic cloud saving to your Minecraft Java Edition world. Using Google Drive, MineVCS automatically pushes/pulls your designated world to your local machine, mirroring the effects of automatic cloud saving.
+
+## Installation
+
+**MacOS**: Instructions coming soon...
+
+**Windows**: Not yet supported
 
 ## How It Works (High Level)
 
