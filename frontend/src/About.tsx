@@ -4,7 +4,6 @@ import { BrowserOpenURL } from "../wailsjs/runtime/runtime";
 const About = () => {
     return (
         <div className="flex flex-col gap-3 justify-center items-center text-center p-6 max-w-4xl mx-auto">
-            <h1 className="font-bold text-4xl text-zinc-100">ABOUT MINEVCS</h1>
             <div className="flex flex-col justify-center items-start gap-10 mt-10">
                 <div className=" w-full text-start flex flex-col gap-5">
                     <h2 className="text-2xl font-semibold text-zinc-100">Incentive</h2>
