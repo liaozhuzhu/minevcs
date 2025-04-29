@@ -210,13 +210,21 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	if err != nil {
 		return nil, err
 	}
+
+	// begin upload
+	worldPath := filepath.Join(home, minecraftDirectory, worldName)
+	// check if the world folder exists
+	if _, err := os.Stat(worldPath); os.IsNotExist(err) {
+		a.printAndEmit("World folder not found on local machine (most likely this is the device you are syncing to) ❌")
+		return nil, fmt.Errorf("world folder not found")
+	}
+	// if so then we can begin the upload by creating a lock file
 	tempLockFile, err := drive.UploadFile(ctx, srv, lockFile, "")
 	if err != nil {
 		return nil, err
 	}
 
-	// zip the world folder
-	worldPath := filepath.Join(home, minecraftDirectory, worldName)
+	// then zip + upload the world folder
 	zipFilePath, err := a.zipFolder(worldPath)
 	if err != nil {
 		return nil, err
@@ -238,6 +246,7 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	a.printAndEmit("Compressed world deleted successfully from local storage ✅")
 	err = drive.DeleteFile(srv, tempLockFile.Id)
 	if err != nil {
+		a.printAndEmit("Error deleting lock file: " + err.Error() + " ❌")
 		return nil, err
 	}
 	return []string{createdFile.Name}, nil
