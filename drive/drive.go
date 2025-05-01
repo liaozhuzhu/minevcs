@@ -187,6 +187,23 @@ func DownloadFile(ctx context.Context, srv *drive.Service, fileID, localPath str
 	return err
 }
 
+func GetLatestUploadTime(srv *drive.Service, worldName string) (string, error) {
+	query := fmt.Sprintf("name = '%s.zip' and 'root' in parents and trashed = false", worldName)
+	res, err := srv.Files.List().
+		Q(query).
+		Fields("files(id, name, modifiedTime)").
+		OrderBy("modifiedTime desc").
+		PageSize(1).
+		Do()
+	if err != nil {
+		return "", err
+	}
+	if len(res.Files) == 0 {
+		return "", fmt.Errorf("file '%s' not found", worldName)
+	}
+	return res.Files[0].ModifiedTime, nil
+}
+
 func UploadFolder(srv *drive.Service, filePath string, parentId string) (string, error) {
 	// make the name = the last part of the path
 	name := filePath

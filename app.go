@@ -81,6 +81,48 @@ func (a *App) startup(ctx context.Context) {
 	}
 }
 
+func (a *App) checkOutOfSync(worldFolder string) (string, error) {
+	_, srv, err := drive.InitDrive()
+	if err != nil {
+		return "", err
+	}
+	var latest time.Time
+
+	err = filepath.Walk(worldFolder, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			modTime := info.ModTime()
+			if modTime.After(latest) {
+				latest = modTime
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to walk through world folder: %w", err)
+	}
+	latest = latest.UTC()
+
+	lastUploadTime, err := drive.GetLatestUploadTime(srv, a.worldName)
+	if err != nil {
+		return "aheadOfSync", nil // here the file is not found on cloud, so we can assume that the local world is ahead of the last upload
+	}
+	parsedLastUploadTime, err := time.Parse(time.RFC3339, lastUploadTime)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse last upload time: %w", err)
+	}
+
+	if latest.After(parsedLastUploadTime) {
+		return "aheadOfSync", nil // true means out of sync with the last upload on cloud
+	} else if latest.Equal(parsedLastUploadTime) {
+		return "inSync", nil // in sync with the last upload on cloud
+	} else {
+		return "false", nil // false means in sync with the last upload on cloud / behind and needs to be pulled
+	}
+}
+
 func (a *App) CheckMinecraftRunning() (bool, error) {
 	path := a.minecraftLauncher
 	procs, err := process.Processes()
@@ -392,9 +434,39 @@ func (a *App) startMinecraftMonitor() {
 				if !minecraftWasRunning {
 					a.printAndEmit("Minecraft is running ✅")
 					minecraftWasRunning = true
-
+					home, _ := os.UserHomeDir()
 					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
-						a.pullWorld()
+						worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
+						if _, err := os.Stat(worldPath); err != nil {
+							if os.IsNotExist(err) {
+								a.printAndEmit("World folder not found on local machine (most likely this is the device you are syncing to) ❌")
+								return
+							}
+							a.printAndEmit("World folder is corrupted, please create a new one ❌")
+							return
+						} else {
+							outOfSync, err := a.checkOutOfSync(worldPath)
+							if err != nil {
+								a.printAndEmit("Error checking world sync status: " + err.Error() + " ❌")
+								return
+							}
+							if outOfSync == "aheadOfSync" {
+								a.printAndEmit("Local world is ahead of last uploaded world, pushing updated world to Drive ⏳")
+								_, err = a.cloudUpload(a.worldName, a.minecraftDirectory)
+								if err != nil {
+									a.printAndEmit("Error uploading world: " + err.Error() + " ❌")
+									return
+								}
+								a.printAndEmit("World pushed successfully to Drive ✅")
+							} else if outOfSync == "inSync" {
+								a.printAndEmit(("Local world is in sync with last uploaded world, no action needed"))
+							} else if outOfSync == "false" {
+								a.pullWorld()
+							} else {
+								a.printAndEmit("Error checking world sync status ❌")
+								return
+							}
+						}
 					}
 				}
 			} else {
