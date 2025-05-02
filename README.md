@@ -37,6 +37,7 @@ When the user exits Minecraft, MineVCS first uploads a temporary `lockfile` so t
 - MineVCS is currently only available for **MacOS** as of 04/26/2025 but Windows support is coming soon! (Since syncing is via Google Drive, there won't be any slowdowns between MacOS and Windows 😁)
 - MineVCS creates a hidden `.minevcs` directory in the user's home folder to store the `config` file and helper files. Users should avoid manually modifying this directory unless they know what they are doing.
 - MineVCS assumes a clean exit of the game performed by the user. This means actions such as powering off the device immediately after closing the game (or without closing the game at all) won't be cleanly handled by the application and could lead to corrupt or loss of data.
+- CAN ONLY SYNC 1 WORLD AT A TIME (05/02/2025)
 
 ## Privacy
 

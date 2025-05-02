@@ -53,6 +53,9 @@ const About = () => {
                     <p className="text-zinc-100 text-sm">
                     MineVCS assumes a clean exit of the game performed by the user. This means actions such as powering off the device immediately after closing the game (or without closing the game at all) won't be cleanly handled by the application and could lead to corrupt or loss of data.
                     </p>
+                    <p className="text-zinc-100 text-sm">
+                    MineVCS currently only supports one world folder at a time. This means that if a user has multiple world folders, they will need to choose one to sync with Google Drive. I plan to add support for multiple world folders in the future.
+                    </p>
                 </div>
 
                 <div className=" w-full text-start flex flex-col gap-5">
