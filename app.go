@@ -78,16 +78,17 @@ func (a *App) startup(ctx context.Context) {
 	a.minecraftDirectory = config["minecraftDirectory"]
 	a.worldName = config["worldName"]
 
-	home, _ = os.UserHomeDir()
-	worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
-	a.pushIfAhead(worldPath)
-
 	if !a.isMonitoring {
 		a.startMinecraftMonitor()
 	}
 }
 
-func (a *App) pushIfAhead(worldPath string) {
+func (a *App) PushIfAhead() {
+	if a.minecraftDirectory == "" || a.worldName == "" {
+		return
+	}
+	home, _ := os.UserHomeDir()
+	worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
 	inSyncWithCloud, err := a.checkOutOfSync(worldPath)
 	if err != nil {
 		a.printAndEmit("Error checking world sync status: " + err.Error() + " ❌")
@@ -252,7 +253,8 @@ func (a *App) zipFolder(sourceDir string) (string, error) {
 }
 
 func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string, error) {
-
+	// handles the upload of the user's world to the cloud
+	a.printAndEmit("Pushing updated world to Drive. PLEASE WAIT ⌛️")
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
@@ -263,6 +265,7 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 		return nil, err
 	}
 
+	// lock file logic
 	lockFilePath := filepath.Join(home, ".minevcs", "temp.lock")
 	if _, err := os.Stat(lockFilePath); os.IsNotExist(err) {
 		a.printAndEmit("Lock file not found, please restart the app")
@@ -285,6 +288,19 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	if err != nil {
 		return nil, err
 	}
+
+	// then upload the level.dat file to drive used to hash later to save time (avoiding unnecessary uploads if the world is in sync with cloud aka the user logs in but doesnt change anything in their world and quits the game)
+	levelDatFilePath := filepath.Join(worldPath, "level.dat")
+	levelDatFile, err := os.Open(levelDatFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer levelDatFile.Close()
+	_, err = drive.UploadFile(ctx, srv, levelDatFile, "")
+	if err != nil {
+		return nil, err
+	}
+	a.printAndEmit("Level.dat uploaded (for hashing). PLEASE WAIT: pushing world to Drive... ⌛️")
 
 	// then zip + upload the world folder
 	zipFilePath, err := a.zipFolder(worldPath)
@@ -419,29 +435,24 @@ func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, 
 	a.minecraftDirectory = minecraftDirectory
 	a.worldName = worldName
 
-	worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
-	a.pushIfAhead(worldPath)
-
-	f, err := os.Open(worldPath)
-	if err != nil {
-		println("Error opening file:", err)
-	}
-	defer f.Close()
-
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		println("Error copying file:", err)
-	}
-
-	fmt.Printf("Hash: %x", h.Sum(nil))
-
 	if !a.isMonitoring {
 		a.startMinecraftMonitor()
 	}
 }
 
-func (a *App) CompareHash(hash1 string, hash2 string) bool {
-	return hash1 == hash2
+func (a *App) getHash(file string) (string, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 func (a *App) GetUserData() (*UserData, error) {
@@ -451,6 +462,44 @@ func (a *App) GetUserData() (*UserData, error) {
 		MinecraftDirectory: a.minecraftDirectory,
 		WorldName:          a.worldName,
 	}, nil
+}
+
+func (a *App) checkHashIsSame() (bool, error) {
+	home, _ := os.UserHomeDir()
+	worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
+	hashWorld, err := a.getHash(worldPath + "/level.dat")
+	if err != nil {
+		a.printAndEmit("Error getting hash of world: " + err.Error() + " ❌")
+		return false, err
+	}
+
+	// download 'level.dat' from drive
+	_, srv, err := drive.InitDrive()
+	if err != nil {
+		a.printAndEmit("Error initializing Drive: " + err.Error() + " ❌")
+		return false, err
+	}
+	levelDatFile, err := drive.FindFileByName(srv, "level.dat")
+	if err != nil {
+		a.printAndEmit("Error finding file: " + err.Error() + " ❌")
+		return false, err
+	}
+	if levelDatFile == nil {
+		a.printAndEmit("No file found with the name: level.dat ❌")
+		return false, err
+	}
+	levelDatFilePath := filepath.Join(os.TempDir(), "level.dat")
+	err = drive.DownloadFile(a.ctx, srv, levelDatFile.Id, levelDatFilePath)
+	if err != nil {
+		a.printAndEmit("Error downloading file: " + err.Error() + " ❌")
+		return false, err
+	}
+	levelDatHash, err := a.getHash(levelDatFilePath)
+	if err != nil {
+		a.printAndEmit("Error getting hash of level.dat: " + err.Error() + " ❌")
+		return false, err
+	}
+	return hashWorld == levelDatHash, nil
 }
 
 func (a *App) startMinecraftMonitor() {
@@ -475,17 +524,34 @@ func (a *App) startMinecraftMonitor() {
 					minecraftWasRunning = true
 
 					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
-						a.pullWorld()
+						hashIsSame, err := a.checkHashIsSame()
+						if err != nil {
+							a.printAndEmit("Error checking hash: " + err.Error() + " ❌")
+							return
+						}
+						if !hashIsSame {
+							a.pullWorld()
+						} else {
+							a.printAndEmit("World is in sync with last uploaded world, no download required ✅")
+						}
 					}
 					a.printAndEmit("Currently playing. Syncing world: " + a.worldName + " ⌛️")
 				}
 			} else {
 				if minecraftWasRunning {
-					a.printAndEmit("Minecraft exited ❌")
 
 					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
 						a.printAndEmit("User exited game, pushing world to Drive...")
-						a.cloudUpload(a.worldName, a.minecraftDirectory)
+						hashIsSame, err := a.checkHashIsSame()
+						if err != nil {
+							a.printAndEmit("Error checking hash: " + err.Error() + " ❌")
+							return
+						}
+						if !hashIsSame {
+							a.cloudUpload(a.worldName, a.minecraftDirectory)
+						} else {
+							a.printAndEmit("World is in sync with last uploaded world, no upload required ✅")
+						}
 					}
 					if cancelPushLoop != nil {
 						cancelPushLoop()
@@ -529,10 +595,4 @@ func (a *App) printAndEmit(msg string) {
 	a.logs = append(a.logs, full)
 	println(msg)
 	runtime.EventsEmit(a.ctx, "log", full)
-}
-
-func (a *App) flushLogs() {
-	for _, log := range a.logs {
-		runtime.EventsEmit(a.ctx, "log", log)
-	}
 }

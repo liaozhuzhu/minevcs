@@ -6,11 +6,11 @@ export function CheckIfAuthenticated():Promise<boolean>;
 
 export function CheckMinecraftRunning():Promise<boolean>;
 
-export function CompareHash(arg1:string,arg2:string):Promise<boolean>;
-
 export function GetUserData():Promise<main.UserData>;
 
 export function GoogleAuth():Promise<string>;
+
+export function PushIfAhead():Promise<void>;
 
 export function SaveUserData(arg1:string,arg2:string,arg3:string):Promise<void>;
 

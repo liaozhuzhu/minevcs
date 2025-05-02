@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import './App.css';
-import {GoogleAuth, UserAuthCode, CheckIfAuthenticated, SaveUserData, GetUserData} from "../wailsjs/go/main/App";
+import {GoogleAuth, UserAuthCode, CheckIfAuthenticated, SaveUserData, GetUserData, PushIfAhead} from "../wailsjs/go/main/App";
 import { CircleHelp, Settings, Info } from 'lucide-react';
 import {BrowserOpenURL, EventsOn} from "../wailsjs/runtime";
 import {Link} from "react-router-dom";
@@ -36,7 +36,7 @@ function Home() {
         } else {
           console.log("User hasn't set their data yet")
         }
-      });     
+      });
 
       const off = EventsOn("log", (msg) => {
         setLogs((prev) => [...prev.slice(-199), msg as string]);
@@ -53,6 +53,15 @@ function Home() {
         logsElement.scrollTop = logsElement.scrollHeight;
       }
     }, [logs]);
+
+    useEffect(() => {
+      if (!minecraftSavePath || !worldName) return;
+      PushIfAhead().then(() => {
+        console.log("Checking if local is ahead of remote");
+      }).catch((error) => {
+        console.error("Error pushing if ahead", error);
+      });
+    }, [minecraftSavePath, worldName]);
 
     const handleAuth = () => {
       GoogleAuth().then((url: string) => {

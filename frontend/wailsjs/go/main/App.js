@@ -10,16 +10,16 @@ export function CheckMinecraftRunning() {
   return window['go']['main']['App']['CheckMinecraftRunning']();
 }
 
-export function CompareHash(arg1, arg2) {
-  return window['go']['main']['App']['CompareHash'](arg1, arg2);
-}
-
 export function GetUserData() {
   return window['go']['main']['App']['GetUserData']();
 }
 
 export function GoogleAuth() {
   return window['go']['main']['App']['GoogleAuth']();
+}
+
+export function PushIfAhead() {
+  return window['go']['main']['App']['PushIfAhead']();
 }
 
 export function SaveUserData(arg1, arg2, arg3) {
