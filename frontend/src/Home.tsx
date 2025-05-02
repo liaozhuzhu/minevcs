@@ -102,7 +102,7 @@ function Home() {
         </Link>
         {!isAuthenticated ? (
             <div className="flex justify-start items-center flex-col gap-2 shadow-xl w-[500px] p-4 rounded-3xl bg-zinc-800">
-                <img src="/logo.png" alt="MineVCS Logo" className="w-30 h-30"/>
+                <img src="/logo.png" alt="MineVCS Logo" className="w-20 h-20"/>
                 <h1 className="text-2xl font-bold text-zinc-50">MineVCS</h1>
                 <p className="text-lg">{showCode ? 'Please Enter Your Code' : 'Please Authorize Google Drive access'}</p>
                 {showCode && (

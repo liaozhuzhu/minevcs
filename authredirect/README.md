@@ -1,1 +1,0 @@
-This static site is made to handle minevcs redirect auth

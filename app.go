@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"context"
+	"crypto/sha256"
 	"drive/drive"
 	"encoding/json"
 	"fmt"
@@ -33,6 +34,7 @@ type App struct {
 	minecraftDirectory string
 	worldName          string
 	isMonitoring       bool
+	logs               []string
 }
 
 func (pr *ProgressReader) Read(p []byte) (n int, err error) {
@@ -76,15 +78,37 @@ func (a *App) startup(ctx context.Context) {
 	a.minecraftDirectory = config["minecraftDirectory"]
 	a.worldName = config["worldName"]
 
+	home, _ = os.UserHomeDir()
+	worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
+	a.pushIfAhead(worldPath)
+
 	if !a.isMonitoring {
 		a.startMinecraftMonitor()
 	}
 }
 
-func (a *App) checkOutOfSync(worldFolder string) (string, error) {
+func (a *App) pushIfAhead(worldPath string) {
+	inSyncWithCloud, err := a.checkOutOfSync(worldPath)
+	if err != nil {
+		a.printAndEmit("Error checking world sync status: " + err.Error() + " ❌")
+		return
+	}
+	if !inSyncWithCloud {
+		a.printAndEmit("Local world is ahead of last uploaded world, pushing updated world to Drive ⏳")
+		_, err = a.cloudUpload(a.worldName, a.minecraftDirectory)
+		if err != nil {
+			a.printAndEmit("Error uploading world: " + err.Error() + " ❌")
+			return
+		}
+	} else {
+		println("Local world is in sync with last uploaded world")
+	}
+}
+
+func (a *App) checkOutOfSync(worldFolder string) (bool, error) {
 	_, srv, err := drive.InitDrive()
 	if err != nil {
-		return "", err
+		return false, err
 	}
 	var latest time.Time
 
@@ -101,26 +125,22 @@ func (a *App) checkOutOfSync(worldFolder string) (string, error) {
 		return nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to walk through world folder: %w", err)
+		return false, fmt.Errorf("failed to walk through world folder: %w", err)
 	}
 	latest = latest.UTC()
 
 	lastUploadTime, err := drive.GetLatestUploadTime(srv, a.worldName)
 	if err != nil {
-		return "aheadOfSync", nil // here the file is not found on cloud, so we can assume that the local world is ahead of the last upload
+		return false, nil // here the file is not found on cloud, so we can assume that the local world is ahead of the last upload
 	}
 	parsedLastUploadTime, err := time.Parse(time.RFC3339, lastUploadTime)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse last upload time: %w", err)
+		return false, fmt.Errorf("failed to parse last upload time: %w", err)
 	}
-
 	if latest.After(parsedLastUploadTime) {
-		return "aheadOfSync", nil // true means out of sync with the last upload on cloud
-	} else if latest.Equal(parsedLastUploadTime) {
-		return "inSync", nil // in sync with the last upload on cloud
-	} else {
-		return "false", nil // false means in sync with the last upload on cloud / behind and needs to be pulled
+		return false, nil // false means out of sync with the last upload on cloud
 	}
+	return true, nil // true means in sync with the last upload on cloud
 }
 
 func (a *App) CheckMinecraftRunning() (bool, error) {
@@ -276,6 +296,7 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 		return nil, err
 	}
 	defer file.Close()
+	// print file name
 	createdFile, err := drive.UploadFile(ctx, srv, file, "")
 	if err != nil {
 		return nil, err
@@ -285,7 +306,6 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	if err != nil {
 		return nil, err
 	}
-	a.printAndEmit("Compressed world deleted successfully from local storage ✅")
 	err = drive.DeleteFile(srv, tempLockFile.Id)
 	if err != nil {
 		a.printAndEmit("Error deleting lock file: " + err.Error() + " ❌")
@@ -351,13 +371,11 @@ func (a *App) pullWorld() {
 		a.printAndEmit("Error downloading file: " + err.Error() + " ❌")
 		return
 	}
-	a.printAndEmit("World downloaded successfully ✅")
 	extractDir, err := a.unzipFolder(zipFilePath)
 	if err != nil {
 		a.printAndEmit("Error extracting zip file: " + err.Error() + " ❌")
 		return
 	}
-	a.printAndEmit("World extracted successfully to: " + extractDir)
 	// move the extracted folder to the minecraft directory
 	home, _ := os.UserHomeDir()
 	minecraftPath := filepath.Join(home, a.minecraftDirectory)
@@ -400,9 +418,30 @@ func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, 
 	a.minecraftLauncher = minecraftLauncher
 	a.minecraftDirectory = minecraftDirectory
 	a.worldName = worldName
+
+	worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
+	a.pushIfAhead(worldPath)
+
+	f, err := os.Open(worldPath)
+	if err != nil {
+		println("Error opening file:", err)
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		println("Error copying file:", err)
+	}
+
+	fmt.Printf("Hash: %x", h.Sum(nil))
+
 	if !a.isMonitoring {
 		a.startMinecraftMonitor()
 	}
+}
+
+func (a *App) CompareHash(hash1 string, hash2 string) bool {
+	return hash1 == hash2
 }
 
 func (a *App) GetUserData() (*UserData, error) {
@@ -434,40 +473,11 @@ func (a *App) startMinecraftMonitor() {
 				if !minecraftWasRunning {
 					a.printAndEmit("Minecraft is running ✅")
 					minecraftWasRunning = true
-					home, _ := os.UserHomeDir()
+
 					if authenticated, err := a.CheckIfAuthenticated(); err == nil && authenticated {
-						worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
-						if _, err := os.Stat(worldPath); err != nil {
-							if os.IsNotExist(err) {
-								a.printAndEmit("World folder not found on local machine (most likely this is the device you are syncing to) ❌")
-								return
-							}
-							a.printAndEmit("World folder is corrupted, please create a new one ❌")
-							return
-						} else {
-							outOfSync, err := a.checkOutOfSync(worldPath)
-							if err != nil {
-								a.printAndEmit("Error checking world sync status: " + err.Error() + " ❌")
-								return
-							}
-							if outOfSync == "aheadOfSync" {
-								a.printAndEmit("Local world is ahead of last uploaded world, pushing updated world to Drive ⏳")
-								_, err = a.cloudUpload(a.worldName, a.minecraftDirectory)
-								if err != nil {
-									a.printAndEmit("Error uploading world: " + err.Error() + " ❌")
-									return
-								}
-								a.printAndEmit("World pushed successfully to Drive ✅")
-							} else if outOfSync == "inSync" {
-								a.printAndEmit(("Local world is in sync with last uploaded world, no action needed"))
-							} else if outOfSync == "false" {
-								a.pullWorld()
-							} else {
-								a.printAndEmit("Error checking world sync status ❌")
-								return
-							}
-						}
+						a.pullWorld()
 					}
+					a.printAndEmit("Currently playing. Syncing world: " + a.worldName + " ⌛️")
 				}
 			} else {
 				if minecraftWasRunning {
@@ -513,8 +523,16 @@ func (a *App) createMinevcsDirectory() {
 	a.printAndEmit("Initialized Service successfully ✅")
 }
 
-func (a *App) printAndEmit(message string) {
-	println(message)
+func (a *App) printAndEmit(msg string) {
 	timestamp := time.Now().Format("15:04:05")
-	runtime.EventsEmit(a.ctx, "log", fmt.Sprintf("[%s] %s", timestamp, message))
+	full := fmt.Sprintf("[%s] %s", timestamp, msg)
+	a.logs = append(a.logs, full)
+	println(msg)
+	runtime.EventsEmit(a.ctx, "log", full)
+}
+
+func (a *App) flushLogs() {
+	for _, log := range a.logs {
+		runtime.EventsEmit(a.ctx, "log", log)
+	}
 }

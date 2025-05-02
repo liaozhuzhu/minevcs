@@ -104,6 +104,7 @@ func UploadFile(ctx context.Context, srv *drive.Service, file *os.File, parentId
 		parents = []string{parentId}
 	}
 	fileName := strings.Split(file.Name(), "/")[len(strings.Split(file.Name(), "/"))-1]
+	println("File name:", fileName)
 	// check if file already exists on drive if so delete it
 	existingFile, err := FindFileByName(srv, fileName)
 	if err != nil {

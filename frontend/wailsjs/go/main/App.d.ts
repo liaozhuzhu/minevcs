@@ -6,6 +6,8 @@ export function CheckIfAuthenticated():Promise<boolean>;
 
 export function CheckMinecraftRunning():Promise<boolean>;
 
+export function CompareHash(arg1:string,arg2:string):Promise<boolean>;
+
 export function GetUserData():Promise<main.UserData>;
 
 export function GoogleAuth():Promise<string>;

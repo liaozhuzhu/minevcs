@@ -10,6 +10,10 @@ export function CheckMinecraftRunning() {
   return window['go']['main']['App']['CheckMinecraftRunning']();
 }
 
+export function CompareHash(arg1, arg2) {
+  return window['go']['main']['App']['CompareHash'](arg1, arg2);
+}
+
 export function GetUserData() {
   return window['go']['main']['App']['GetUserData']();
 }
