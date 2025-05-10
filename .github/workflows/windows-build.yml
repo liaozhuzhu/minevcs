@@ -18,7 +18,7 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Install Node.js (for frontend)
+      - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
@@ -37,7 +37,7 @@ jobs:
         run: wails build
 
       - name: Upload built executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-executable
           path: build\bin\*.exe
