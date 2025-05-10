@@ -9,5 +9,8 @@
   "author": {
     "name": "Liao Zhu",
     "email": "liao.zhu.cs@gmail.com"
+  },
+  "windows": {
+    "icon": "frontend/public/icon.ico"
   }
 }
