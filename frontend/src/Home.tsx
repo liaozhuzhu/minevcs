@@ -147,7 +147,7 @@ function Home() {
                         </div>
                         <div className="flex gap-2 items-start justify-center flex-col ">
                             <input type="text" 
-                                placeholder="/Applications/Minecraft.app/Contents/MacOS/launcher" 
+                                placeholder={defaultMinecraftLauncherPath}
                                 id="file-path" 
                                 value={minecraftLauncherPath} 
                                 onChange={(e) => setMinecraftLauncherPath(e.target.value)} 
@@ -163,7 +163,7 @@ function Home() {
                         </div>
                         <div className="flex justify-center items-start gap-2 flex-col">
                             <input type="text" 
-                                placeholder="/Library/Application Support/minecraft/saves/" 
+                                placeholder={defaultMinecraftSavePath}
                                 id="file-path" 
                                 value={minecraftSavePath} 
                                 onChange={(e) => setSavePath(e.target.value)} 
