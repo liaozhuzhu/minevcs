@@ -70,11 +70,10 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 
-	// fix for windows error (need to double slash instead of one)
-
 	var config map[string]string
 	err = json.Unmarshal(data, &config)
 	if err != nil {
+		fmt.Printf("JSON UNMARSHALL ERROR: %v\n", err)
 		a.printAndEmit("JSON unmarshal. Config file is corrupted, please create a new one ❌")
 		return
 	}
