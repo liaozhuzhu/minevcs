@@ -1,5 +1,19 @@
 export namespace main {
 	
+	export class DefaultPaths {
+	    minecraftLauncherPath: string;
+	    minecraftSavePath: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DefaultPaths(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.minecraftLauncherPath = source["minecraftLauncherPath"];
+	        this.minecraftSavePath = source["minecraftSavePath"];
+	    }
+	}
 	export class UserData {
 	    minecraftLauncher: string;
 	    minecraftDirectory: string;

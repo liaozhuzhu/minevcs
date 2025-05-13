@@ -6,6 +6,8 @@ export function CheckIfAuthenticated():Promise<boolean>;
 
 export function CheckMinecraftRunning():Promise<boolean>;
 
+export function GetDefaultPaths():Promise<main.DefaultPaths>;
+
 export function GetUserData():Promise<main.UserData>;
 
 export function GoogleAuth():Promise<string>;
@@ -15,5 +17,3 @@ export function PushIfAhead():Promise<void>;
 export function SaveUserData(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function UserAuthCode(arg1:string):Promise<void>;
-
-export function GetDefaultPaths():Promise<main.DefaultPaths>;

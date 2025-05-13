@@ -426,7 +426,9 @@ func (a *App) pullWorld() {
 
 func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, worldName string) {
 	a.printAndEmit("Saving user data locally...")
+	/*
 	userOS := runtime.GOOS
+	
 	if userOS == "windows" {
 		// this is where the user fix comes in, we need to double each backslash in each string
 		a.minecraftLauncher = strings.ReplaceAll(minecraftLauncher, `\`, `\\`)
@@ -435,6 +437,9 @@ func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, 
 		a.minecraftLauncher = minecraftLauncher
 		a.minecraftDirectory = minecraftDirectory
 	}
+	*/
+	a.minecraftLauncher = minecraftLauncher
+	a.minecraftDirectory = minecraftDirectory
 	a.worldName = worldName
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs")
