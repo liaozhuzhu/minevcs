@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"runtime"
 
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -36,6 +37,7 @@ type App struct {
 	isMonitoring       bool
 	logs               []string
 }
+	
 
 func (pr *ProgressReader) Read(p []byte) (n int, err error) {
 	n, err = pr.Reader.Read(p)
@@ -53,6 +55,7 @@ func (a *App) startup(ctx context.Context) {
 	a.createMinevcsDirectory()
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs", "config.json")
+	println("CONFIG PATH: ", configPath)
 	if _, err := os.Stat(configPath); err != nil {
 		if os.IsNotExist(err) {
 			a.printAndEmit("Config file not created yet, create a new one first" + " ❌")
@@ -64,14 +67,16 @@ func (a *App) startup(ctx context.Context) {
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		a.printAndEmit("Config file is corrupted, please create a new one ❌")
+		a.printAndEmit("Error reading file. Config file is corrupted, please create a new one ❌")
 		return
 	}
+
+	// fix for windows error (need to double slash instead of one)
 
 	var config map[string]string
 	err = json.Unmarshal(data, &config)
 	if err != nil {
-		a.printAndEmit("Config file is corrupted, please create a new one ❌")
+		a.printAndEmit("JSON unmarshal. Config file is corrupted, please create a new one ❌")
 		return
 	}
 
@@ -417,6 +422,12 @@ func (a *App) pullWorld() {
 
 func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, worldName string) {
 	a.printAndEmit("Saving user data locally...")
+	userOS := runtime.GOOS
+	if (userOS == "windows") {
+		// this is where the user fix comes in, we need to double each backslash in each string
+		minecraftLauncher := strings.ReplaceAll(minecraftLauncher, `\`, `\\`)
+		minecraftDirectory := strings.ReplaceAll(minecraftLauncher, `\`, `\\`)
+	}
 	a.minecraftLauncher = minecraftLauncher
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs")

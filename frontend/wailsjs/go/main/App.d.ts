@@ -6,8 +6,6 @@ export function CheckIfAuthenticated():Promise<boolean>;
 
 export function CheckMinecraftRunning():Promise<boolean>;
 
-export function FrontendReady():Promise<void>;
-
 export function GetUserData():Promise<main.UserData>;
 
 export function GoogleAuth():Promise<string>;

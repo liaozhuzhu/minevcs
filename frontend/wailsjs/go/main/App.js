@@ -10,10 +10,6 @@ export function CheckMinecraftRunning() {
   return window['go']['main']['App']['CheckMinecraftRunning']();
 }
 
-export function FrontendReady() {
-  return window['go']['main']['App']['FrontendReady']();
-}
-
 export function GetUserData() {
   return window['go']['main']['App']['GetUserData']();
 }
