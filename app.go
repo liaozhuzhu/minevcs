@@ -47,18 +47,10 @@ func NewApp() *App {
 	return &App{}
 }
 
-var frontendReady = false
-
-func (a *App) FrontendReady() {
-	frontendReady = true
-	go func() {
-		// Optional delay to ensure JS listener is attached
-		time.Sleep(500 * time.Millisecond)
-		a.startupAfterFrontendReady()
-	}()
-}
-
-func (a *App) startupAfterFrontendReady() {
+func (a *App) startup(ctx context.Context) {
+	a.ctx = ctx
+	time.Sleep(1500 * time.Millisecond) // gives time for frontend to load
+	a.createMinevcsDirectory()
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs", "config.json")
 	if _, err := os.Stat(configPath); err != nil {
@@ -90,11 +82,6 @@ func (a *App) startupAfterFrontendReady() {
 	if !a.isMonitoring {
 		a.startMinecraftMonitor()
 	}
-}
-
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-	a.createMinevcsDirectory()
 }
 
 func (a *App) PushIfAhead() {
