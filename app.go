@@ -467,6 +467,7 @@ func (a *App) getHash(file string) (string, error) {
 }
 
 func (a *App) GetUserData() (UserData, error) {
+	println("USER DATA: ", a.minecraftLauncher, a.minecraftDirectory)
 
 	return UserData{
 		MinecraftLauncher:  a.minecraftLauncher,
