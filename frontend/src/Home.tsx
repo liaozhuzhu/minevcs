@@ -38,7 +38,7 @@ function Home() {
           }
         });
       }
-      , 1500);
+      , 500);
 
       const off = EventsOn("log", (msg) => {
         setLogs((prev) => [...prev.slice(-199), msg as string]);
