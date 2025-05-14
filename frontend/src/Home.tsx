@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import './App.css';
-import {GoogleAuth, UserAuthCode, CheckIfAuthenticated, SaveUserData, GetUserData, PushIfAhead} from "../wailsjs/go/main/App";
+import {GoogleAuth, UserAuthCode, CheckIfAuthenticated, SaveUserData, GetUserData, PushIfAhead, GetDefaultPaths} from "../wailsjs/go/main/App";
 import { CircleHelp, Settings, Info } from 'lucide-react';
 import {BrowserOpenURL, EventsOn} from "../wailsjs/runtime";
 import {Link} from "react-router-dom";
@@ -18,10 +18,11 @@ function Home() {
     const [showTooltip, setShowTooltip] = useState<string | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [logs, setLogs] = useState<string[]>([]);
-    const userOS = window.navigator.platform;
-    const isMac = userOS.startsWith("Mac");
-    const defaultMinecraftLauncherPath = isMac ? "/Applications/Minecraft.app/Contents/MacOS/launcher" : "C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe";
-    const defaultMinecraftSavePath = isMac ? "/Library/Application Support/minecraft/saves/" : "C:\\Users\\%username%\\AppData\\Roaming\\.minecraft\\saves\\";
+    
+    const [defaultMinecraftLauncherPath, setDefaultMinecraftLauncherPath] = useState<string>('');
+    const [defaultMinecraftSavePath, setDefaultMinecraftSavePath] = useState<string>('');
+    // const defaultMinecraftLauncherPath = isMac ? "/Applications/Minecraft.app/Contents/MacOS/launcher" : "C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe";
+    // const defaultMinecraftSavePath = isMac ? "/Library/Application Support/minecraft/saves/" : "C:\\Users\\%username%\\AppData\\Roaming\\.minecraft\\saves\\";
  
     useEffect(() => {
       CheckIfAuthenticated().then((isAuth: boolean) => {
@@ -36,6 +37,11 @@ function Home() {
           } else {
             console.log("User hasn't set their data yet")
           }
+        });
+
+        GetDefaultPaths().then((data) => {
+          setDefaultMinecraftLauncherPath(data.minecraftLauncher);
+          setDefaultMinecraftSavePath(data.minecraftDirectory);
         });
       }
       , 500);

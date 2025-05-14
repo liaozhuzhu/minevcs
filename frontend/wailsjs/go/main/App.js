@@ -29,3 +29,7 @@ export function SaveUserData(arg1, arg2, arg3) {
 export function UserAuthCode(arg1) {
   return window['go']['main']['App']['UserAuthCode'](arg1);
 }
+
+export function GetDefaultPaths() {
+  return window['go']['main']['App']['GetDefaultPaths']();
+}

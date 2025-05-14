@@ -29,6 +29,11 @@ type UserData struct {
 	WorldName          string `json:"worldName"`
 }
 
+type DefaultPaths struct {
+	MinecraftLauncherPath string `json:"minecraftLauncherPath"`
+	MinecraftSavePath     string `json:"minecraftSavePath"`
+}
+
 type App struct {
 	ctx                context.Context
 	minecraftLauncher  string
@@ -467,7 +472,6 @@ func (a *App) getHash(file string) (string, error) {
 }
 
 func (a *App) GetUserData() (UserData, error) {
-	println("USER DATA: ", a.minecraftLauncher, a.minecraftDirectory)
 
 	return UserData{
 		MinecraftLauncher:  a.minecraftLauncher,
@@ -607,4 +611,31 @@ func (a *App) printAndEmit(msg string) {
 	a.logs = append(a.logs, full)
 	println(msg)
 	wailsRuntime.EventsEmit(a.ctx, "log", full)
+}
+
+// checks user's OS and returns respective path(s)
+func (a *App) GetDefaultPaths() (DefaultPaths, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return DefaultPaths{}, err
+	}
+
+	var launcherPath string
+	var savePath string
+
+	if runtime.GOOS == "darwin" {
+		launcherPath = "/Applications/Minecraft.app/Contents/MacOS/launcher"
+		savePath = "/Library/Application Support/minecraft/saves/"
+	} else if runtime.GOOS == "windows" {
+		launcherPath = `C:\Program Files (x86)\Minecraft Launcher\MinecraftLauncher.exe`
+		savePath = filepath.Join(home, "AppData", "Roaming", ".minecraft", "saves")
+	} else {
+		launcherPath = "/usr/bin/minecraft-launcher"
+		savePath = filepath.Join(home, ".minecraft", "saves")
+	}
+
+	return DefaultPaths{
+		MinecraftLauncherPath: launcherPath,
+		MinecraftSavePath:     savePath,
+	}, nil
 }
