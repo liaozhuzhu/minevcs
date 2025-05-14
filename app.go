@@ -444,7 +444,7 @@ func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, 
 		}
 	*/
 	a.minecraftLauncher = minecraftLauncher
-	a.minecraftDirectory = minecraftDirectory
+	a.minecraftDirectory = minecraftDirectory // aka the save path
 	a.worldName = worldName
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs")

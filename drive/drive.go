@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	_ "embed"
@@ -103,7 +104,7 @@ func UploadFile(ctx context.Context, srv *drive.Service, file *os.File, parentId
 	if parentId != "" {
 		parents = []string{parentId}
 	}
-	fileName := strings.Split(file.Name(), "/")[len(strings.Split(file.Name(), "/"))-1]
+	fileName := filepath.Base(file.Name())
 	println("File name:", fileName)
 	// check if file already exists on drive if so delete it
 	existingFile, err := FindFileByName(srv, fileName)
