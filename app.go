@@ -327,7 +327,6 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 	// print file name
 	createdFile, err := drive.UploadFile(ctx, srv, file, "")
 	file.Close()
