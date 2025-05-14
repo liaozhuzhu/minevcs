@@ -427,16 +427,16 @@ func (a *App) pullWorld() {
 func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, worldName string) {
 	a.printAndEmit("Saving user data locally...")
 	/*
-	userOS := runtime.GOOS
-	
-	if userOS == "windows" {
-		// this is where the user fix comes in, we need to double each backslash in each string
-		a.minecraftLauncher = strings.ReplaceAll(minecraftLauncher, `\`, `\\`)
-		a.minecraftDirectory = strings.ReplaceAll(minecraftDirectory, `\`, `\\`)
-	} else {
-		a.minecraftLauncher = minecraftLauncher
-		a.minecraftDirectory = minecraftDirectory
-	}
+		userOS := runtime.GOOS
+
+		if userOS == "windows" {
+			// this is where the user fix comes in, we need to double each backslash in each string
+			a.minecraftLauncher = strings.ReplaceAll(minecraftLauncher, `\`, `\\`)
+			a.minecraftDirectory = strings.ReplaceAll(minecraftDirectory, `\`, `\\`)
+		} else {
+			a.minecraftLauncher = minecraftLauncher
+			a.minecraftDirectory = minecraftDirectory
+		}
 	*/
 	a.minecraftLauncher = minecraftLauncher
 	a.minecraftDirectory = minecraftDirectory
@@ -488,6 +488,11 @@ func (a *App) GetUserData() (UserData, error) {
 func (a *App) checkHashIsSame() (bool, error) {
 	home, _ := os.UserHomeDir()
 	worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
+	// first time syncing no level.dat file will exist locally
+	if _, err := os.Stat(worldPath + "/level.dat"); os.IsNotExist(err) {
+		a.printAndEmit("No level.dat file found locally, (most likely this is where you're syncing to) ❌")
+		return false, nil
+	}
 	hashWorld, err := a.getHash(worldPath + "/level.dat")
 	if err != nil {
 		a.printAndEmit("Error getting hash of world: " + err.Error() + " ❌")
@@ -632,7 +637,7 @@ func (a *App) GetDefaultPaths() (DefaultPaths, error) {
 		launcherPath = "/Applications/Minecraft.app/Contents/MacOS/launcher"
 		savePath = "/Library/Application Support/minecraft/saves/"
 	} else if runtime.GOOS == "windows" {
-		launcherPath = `C:\Program Files (x86)\Minecraft Launcher\MinecraftLauncher.exe`
+		launcherPath = `C:\XboxGames\Minecraft Launcher\Content\Minecraft.exe`
 		savePath = filepath.Join(home, "AppData", "Roaming", ".minecraft", "saves")
 	} else {
 		launcherPath = "/usr/bin/minecraft-launcher"
