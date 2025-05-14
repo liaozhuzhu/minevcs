@@ -643,7 +643,7 @@ func (a *App) GetDefaultPaths() (DefaultPaths, error) {
 		savePath = "/Library/Application Support/minecraft/saves/"
 	} else if runtime.GOOS == "windows" {
 		launcherPath = `C:\XboxGames\Minecraft Launcher\Content\Minecraft.exe`
-		savePath = filepath.Join(home, "AppData", "Roaming", ".minecraft", "saves")
+		savePath = filepath.Join("AppData", "Roaming", ".minecraft", "saves")
 	} else {
 		launcherPath = "/usr/bin/minecraft-launcher"
 		savePath = filepath.Join(home, ".minecraft", "saves")
