@@ -99,6 +99,11 @@ func (a *App) PushIfAhead() {
 	}
 	home, _ := os.UserHomeDir()
 	worldPath := filepath.Join(home, a.minecraftDirectory, a.worldName)
+	// check if the world folder exists
+	if _, err := os.Stat(worldPath); os.IsNotExist(err) {
+		a.printAndEmit("World folder not found on local machine (most likely this is the device you are syncing to) ❌")
+		return
+	}
 	inSyncWithCloud, err := a.checkOutOfSync(worldPath)
 	if err != nil {
 		a.printAndEmit("Error checking world sync status: " + err.Error() + " ❌")
