@@ -99,6 +99,12 @@ function Home() {
         SaveUserData(minecraftLauncherPath, minecraftSavePath, worldName).then(() => {
             console.log("User settings saved successfully", minecraftSavePath, worldName);
         });
+        // then check if local world is ahead of remote, if so we need to push (this happens if user syncs a new world)
+        PushIfAhead().then(() => {
+          console.log("Checking if local is ahead of remote");
+        }).catch((error) => {
+          console.error("Error pushing if ahead", error);
+        });
     }
 
     const getButtonClass = (disabled: boolean) =>
