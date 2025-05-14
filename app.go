@@ -315,7 +315,8 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	if err != nil {
 		return nil, err
 	}
-	a.printAndEmit("Level.dat uploaded (for hashing). PLEASE WAIT: pushing world to Drive... ⌛️")
+	a.printAndEmit("Level.dat uploaded (for hashing)")
+	a.printAndEmit("PLEASE WAIT: pushing world to Drive... ⌛️")
 
 	// then zip + upload the world folder
 	zipFilePath, err := a.zipFolder(worldPath)
@@ -329,6 +330,7 @@ func (a *App) cloudUpload(worldName string, minecraftDirectory string) ([]string
 	defer file.Close()
 	// print file name
 	createdFile, err := drive.UploadFile(ctx, srv, file, "")
+	file.Close()
 	if err != nil {
 		return nil, err
 	}
