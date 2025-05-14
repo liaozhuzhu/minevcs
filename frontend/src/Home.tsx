@@ -27,16 +27,18 @@ function Home() {
       CheckIfAuthenticated().then((isAuth: boolean) => {
         setIsAuthenticated(isAuth);
       });
-
-      GetUserData().then((data) => {
-        if (data) {
-          setMinecraftLauncherPath(data.minecraftLauncher);
-          setMinecraftSavePath(data.minecraftDirectory);
-          setWorldName(data.worldName);
-        } else {
-          console.log("User hasn't set their data yet")
-        }
-      });
+      const time = setTimeout(() => {
+        GetUserData().then((data) => {
+          if (data) {
+            setMinecraftLauncherPath(data.minecraftLauncher);
+            setMinecraftSavePath(data.minecraftDirectory);
+            setWorldName(data.worldName);
+          } else {
+            console.log("User hasn't set their data yet")
+          }
+        });
+      }
+      , 1500);
 
       const off = EventsOn("log", (msg) => {
         setLogs((prev) => [...prev.slice(-199), msg as string]);
@@ -44,6 +46,7 @@ function Home() {
     
       return () => {
         off();
+        clearTimeout(time);
       };
     }, []);
 
