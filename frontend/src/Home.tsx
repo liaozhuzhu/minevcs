@@ -30,6 +30,7 @@ function Home() {
 
       GetUserData().then((data) => {
         if (data) {
+          console.log("User data found", data);
           setMinecraftLauncherPath(data.minecraftLauncher);
           setMinecraftSavePath(data.minecraftDirectory);
           setWorldName(data.worldName);
