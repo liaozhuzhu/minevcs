@@ -10,12 +10,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
-	"runtime"
 
 	"github.com/shirou/gopsutil/v3/process"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type ProgressReader struct {
@@ -37,7 +37,6 @@ type App struct {
 	isMonitoring       bool
 	logs               []string
 }
-	
 
 func (pr *ProgressReader) Read(p []byte) (n int, err error) {
 	n, err = pr.Reader.Read(p)
@@ -423,12 +422,15 @@ func (a *App) pullWorld() {
 func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, worldName string) {
 	a.printAndEmit("Saving user data locally...")
 	userOS := runtime.GOOS
-	if (userOS == "windows") {
+	if userOS == "windows" {
 		// this is where the user fix comes in, we need to double each backslash in each string
-		minecraftLauncher := strings.ReplaceAll(minecraftLauncher, `\`, `\\`)
-		minecraftDirectory := strings.ReplaceAll(minecraftLauncher, `\`, `\\`)
+		a.minecraftLauncher = strings.ReplaceAll(minecraftLauncher, `\`, `\\`)
+		a.minecraftDirectory = strings.ReplaceAll(minecraftDirectory, `\`, `\\`)
+	} else {
+		a.minecraftLauncher = minecraftLauncher
+		a.minecraftDirectory = minecraftDirectory
 	}
-	a.minecraftLauncher = minecraftLauncher
+	a.worldName = worldName
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".minevcs")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -436,16 +438,13 @@ func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, 
 		return
 	}
 	file := filepath.Join(configPath, "config.json")
-	data := fmt.Sprintf(`{"minecraftLauncher": "%s", "minecraftDirectory": "%s", "worldName": "%s", "lastUpdated": "%s"}`, minecraftLauncher, minecraftDirectory, worldName, time.Now().Format(time.RFC3339))
+	data := fmt.Sprintf(`{"minecraftLauncher": "%s", "minecraftDirectory": "%s", "worldName": "%s", "lastUpdated": "%s"}`, a.minecraftLauncher, a.minecraftDirectory, a.worldName, time.Now().Format(time.RFC3339))
 	err := os.WriteFile(file, []byte(data), 0644)
 	if err != nil {
 		a.printAndEmit("Error saving user data: " + err.Error())
 	} else {
 		a.printAndEmit("User data saved successfully ✅")
 	}
-	a.minecraftLauncher = minecraftLauncher
-	a.minecraftDirectory = minecraftDirectory
-	a.worldName = worldName
 
 	if !a.isMonitoring {
 		a.startMinecraftMonitor()
@@ -606,5 +605,5 @@ func (a *App) printAndEmit(msg string) {
 	full := fmt.Sprintf("[%s] %s", timestamp, msg)
 	a.logs = append(a.logs, full)
 	println(msg)
-	runtime.EventsEmit(a.ctx, "log", full)
+	wailsRuntime.EventsEmit(a.ctx, "log", full)
 }
