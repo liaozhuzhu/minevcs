@@ -40,8 +40,8 @@ function Home() {
         });
 
         GetDefaultPaths().then((data) => {
-          setDefaultMinecraftLauncherPath(data.minecraftLauncher);
-          setDefaultMinecraftSavePath(data.minecraftDirectory);
+          setDefaultMinecraftLauncherPath(data.minecraftLauncherPath);
+          setDefaultMinecraftSavePath(data.minecraftSavePath);
         });
       }
       , 500);
