@@ -21,9 +21,7 @@ function Home() {
     
     const [defaultMinecraftLauncherPath, setDefaultMinecraftLauncherPath] = useState<string>('');
     const [defaultMinecraftSavePath, setDefaultMinecraftSavePath] = useState<string>('');
-    // const defaultMinecraftLauncherPath = isMac ? "/Applications/Minecraft.app/Contents/MacOS/launcher" : "C:\\Program Files (x86)\\Minecraft Launcher\\MinecraftLauncher.exe";
-    // const defaultMinecraftSavePath = isMac ? "/Library/Application Support/minecraft/saves/" : "C:\\Users\\%username%\\AppData\\Roaming\\.minecraft\\saves\\";
- 
+     
     useEffect(() => {
       CheckIfAuthenticated().then((isAuth: boolean) => {
         setIsAuthenticated(isAuth);
@@ -34,6 +32,12 @@ function Home() {
             setMinecraftLauncherPath(data.minecraftLauncher);
             setMinecraftSavePath(data.minecraftDirectory);
             setWorldName(data.worldName);
+            // then check if local world is ahead of remote, if so we need to push (this happens if user played without the app running)
+            PushIfAhead().then(() => {
+              console.log("Checking if local is ahead of remote");
+            }).catch((error) => {
+              console.error("Error pushing if ahead", error);
+            });
           } else {
             console.log("User hasn't set their data yet")
           }
@@ -62,15 +66,6 @@ function Home() {
         logsElement.scrollTop = logsElement.scrollHeight;
       }
     }, [logs]);
-
-    useEffect(() => {
-      if (!minecraftSavePath || !worldName) return;
-      PushIfAhead().then(() => {
-        console.log("Checking if local is ahead of remote");
-      }).catch((error) => {
-        console.error("Error pushing if ahead", error);
-      });
-    }, [minecraftSavePath, worldName]);
 
     const handleAuth = () => {
       GoogleAuth().then((url: string) => {
