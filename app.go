@@ -466,9 +466,9 @@ func (a *App) getHash(file string) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
-func (a *App) GetUserData() (*UserData, error) {
+func (a *App) GetUserData() (UserData, error) {
 
-	return &UserData{
+	return UserData{
 		MinecraftLauncher:  a.minecraftLauncher,
 		MinecraftDirectory: a.minecraftDirectory,
 		WorldName:          a.worldName,
