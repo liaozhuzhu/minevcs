@@ -81,6 +81,7 @@ func (a *App) startup(ctx context.Context) {
 	a.minecraftLauncher = config["minecraftLauncher"]
 	a.minecraftDirectory = config["minecraftDirectory"]
 	a.worldName = config["worldName"]
+	println("GOT DATA: ", a.minecraftLauncher, a.minecraftDirectory, a.worldName)
 
 	if !a.isMonitoring {
 		a.startMinecraftMonitor()
