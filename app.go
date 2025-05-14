@@ -453,8 +453,18 @@ func (a *App) SaveUserData(minecraftLauncher string, minecraftDirectory string, 
 		return
 	}
 	file := filepath.Join(configPath, "config.json")
-	data := fmt.Sprintf(`{"minecraftLauncher": "%s", "minecraftDirectory": "%s", "worldName": "%s", "lastUpdated": "%s"}`, a.minecraftLauncher, a.minecraftDirectory, a.worldName, time.Now().Format(time.RFC3339))
-	err := os.WriteFile(file, []byte(data), 0644)
+	config := map[string]string{
+		"minecraftLauncher":  a.minecraftLauncher,
+		"minecraftDirectory": a.minecraftDirectory,
+		"worldName":          a.worldName,
+		"lastUpdated":        time.Now().Format(time.RFC3339),
+	}
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		a.printAndEmit("Error marshaling config: " + err.Error())
+		return
+	}
+	err = os.WriteFile(file, data, 0644)
 	if err != nil {
 		a.printAndEmit("Error saving user data: " + err.Error())
 	} else {
