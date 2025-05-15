@@ -425,7 +425,8 @@ func (a *App) pullWorld() {
 		}
 		a.printAndEmit("Existing world deleted successfully ✅")
 	}
-	err = os.Rename(extractDir+"/"+a.worldName, filepath.Join(minecraftPath, a.worldName))
+	// err = os.Rename(extractDir+"/"+a.worldName, filepath.Join(minecraftPath, a.worldName))
+	err = os.Rename(extractDir, filepath.Join(minecraftPath, a.worldName)) // cross platform fix
 	if err != nil {
 		a.printAndEmit("Error moving extracted folder: " + err.Error() + " ❌")
 		return
