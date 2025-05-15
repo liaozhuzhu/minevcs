@@ -237,7 +237,8 @@ func (a *App) zipFolder(sourceDir string) (string, error) {
 			return err
 		}
 
-		relPath := strings.TrimPrefix(path, filepath.Dir(sourceDir))
+		// relPath := strings.TrimPrefix(path, filepath.Dir(sourceDir))
+		relPath := strings.TrimPrefix(path, sourceDir)
 		relPath = strings.TrimPrefix(relPath, string(filepath.Separator))
 
 		if relPath == "" {
