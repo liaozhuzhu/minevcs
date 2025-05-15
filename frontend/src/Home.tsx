@@ -26,37 +26,32 @@ function Home() {
       CheckIfAuthenticated().then((isAuth: boolean) => {
         setIsAuthenticated(isAuth);
       });
-      const time = setTimeout(() => {
+
+      // wait for go backend to be ready
+      const offUserData = EventsOn("userDataReady", () => {
         GetUserData().then((data) => {
-          if (data) {
-            setMinecraftLauncherPath(data.minecraftLauncher);
-            setMinecraftSavePath(data.minecraftDirectory);
-            setWorldName(data.worldName);
-            // then check if local world is ahead of remote, if so we need to push (this happens if user played without the app running)
-            PushIfAhead().then(() => {
-              console.log("Checking if local is ahead of remote");
-            }).catch((error) => {
-              console.error("Error pushing if ahead", error);
-            });
-          } else {
-            console.log("User hasn't set their data yet")
-          }
+          setMinecraftLauncherPath(data.minecraftLauncher);
+          setMinecraftSavePath(data.minecraftDirectory);
+          setWorldName(data.worldName);
+          PushIfAhead().catch((error) => {
+            console.error("Error pushing if ahead", error);
+          });
         });
+      });
+    
+      // Still fetch default paths immediately
+      GetDefaultPaths().then((data) => {
+        setDefaultMinecraftLauncherPath(data.minecraftLauncherPath);
+        setDefaultMinecraftSavePath(data.minecraftSavePath);
+      });
 
-        GetDefaultPaths().then((data) => {
-          setDefaultMinecraftLauncherPath(data.minecraftLauncherPath);
-          setDefaultMinecraftSavePath(data.minecraftSavePath);
-        });
-      }
-      , 500);
-
-      const off = EventsOn("log", (msg) => {
+      const offLog = EventsOn("log", (msg) => {
         setLogs((prev) => [...prev.slice(-199), msg as string]);
       });
     
       return () => {
-        off();
-        clearTimeout(time);
+        offUserData();
+        offLog();
       };
     }, []);
 

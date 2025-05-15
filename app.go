@@ -91,6 +91,8 @@ func (a *App) startup(ctx context.Context) {
 	if !a.isMonitoring {
 		a.startMinecraftMonitor()
 	}
+
+	wailsRuntime.EventsEmit(a.ctx, "userDataReady", nil)
 }
 
 func (a *App) PushIfAhead() {
